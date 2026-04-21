@@ -1,0 +1,3609 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DUEL QUIZ — 1v1 Battle</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Exo+2:wght@300;400;600;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg-deep: #050508;
+        --bg-card: #0d0d18;
+        --bg-surface: #111125;
+        --accent-red: #ff2244;
+        --accent-blue: #0af;
+        --accent-gold: #ffd700;
+        --accent-green: #00ff88;
+        --accent-purple: #9b4dff;
+        --text-primary: #f0f0ff;
+        --text-secondary: #8899bb;
+        --border-glow: rgba(0, 170, 255, 0.25);
+        --timer-full: #00ff88;
+        --timer-mid: #ffd700;
+        --timer-low: #ff2244;
+        --p1-color: #0af;
+        --p2-color: #ff2244;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Rajdhani", sans-serif;
+        background: var(--bg-deep);
+        color: var(--text-primary);
+        min-height: 100vh;
+        overflow-x: hidden;
+        cursor: default;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background:
+          radial-gradient(
+            ellipse 80% 40% at 20% -10%,
+            rgba(0, 170, 255, 0.08) 0%,
+            transparent 60%
+          ),
+          radial-gradient(
+            ellipse 80% 40% at 80% 110%,
+            rgba(255, 34, 68, 0.08) 0%,
+            transparent 60%
+          );
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .screen {
+        display: none;
+        min-height: 100vh;
+        position: relative;
+        z-index: 1;
+      }
+      .screen.active {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* ============ SCANLINES EFFECT ============ */
+      body::after {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(0, 0, 0, 0.03) 2px,
+          rgba(0, 0, 0, 0.03) 4px
+        );
+        pointer-events: none;
+        z-index: 9999;
+      }
+
+      /* ============ PARTICLES ============ */
+      #particles {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 0;
+        overflow: hidden;
+      }
+      .particle {
+        position: absolute;
+        border-radius: 50%;
+        animation: floatParticle linear infinite;
+        opacity: 0;
+      }
+      @keyframes floatParticle {
+        0% {
+          transform: translateY(100vh) rotate(0deg);
+          opacity: 0;
+        }
+        10% {
+          opacity: 1;
+        }
+        90% {
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(-10vh) rotate(720deg);
+          opacity: 0;
+        }
+      }
+
+      /* ============ HOME SCREEN ============ */
+      #home-screen {
+        padding: 2rem;
+        gap: 0;
+      }
+
+      .logo-container {
+        text-align: center;
+        margin-bottom: 3rem;
+        position: relative;
+      }
+
+      .logo-badge {
+        font-size: 0.7rem;
+        letter-spacing: 6px;
+        color: var(--accent-blue);
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+        opacity: 0.8;
+      }
+
+      .logo-title {
+        font-family: "Orbitron", sans-serif;
+        font-size: clamp(3rem, 8vw, 7rem);
+        font-weight: 900;
+        line-height: 0.9;
+        position: relative;
+        display: inline-block;
+      }
+
+      .logo-title .duel {
+        display: block;
+        background: linear-gradient(135deg, var(--p1-color), #44ccff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        filter: drop-shadow(0 0 30px rgba(0, 170, 255, 0.5));
+        animation: titlePulse 3s ease-in-out infinite;
+      }
+
+      .logo-title .quiz {
+        display: block;
+        background: linear-gradient(135deg, var(--p2-color), #ff6688);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        filter: drop-shadow(0 0 30px rgba(255, 34, 68, 0.5));
+        animation: titlePulse 3s ease-in-out infinite 0.5s;
+      }
+
+      @keyframes titlePulse {
+        0%,
+        100% {
+          filter: drop-shadow(0 0 20px currentColor);
+        }
+        50% {
+          filter: drop-shadow(0 0 40px currentColor)
+            drop-shadow(0 0 80px currentColor);
+        }
+      }
+
+      .vs-badge {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-family: "Orbitron", sans-serif;
+        font-size: 1.5rem;
+        font-weight: 900;
+        color: var(--accent-gold);
+        background: var(--bg-deep);
+        border: 2px solid var(--accent-gold);
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow:
+          0 0 20px rgba(255, 215, 0, 0.4),
+          inset 0 0 20px rgba(255, 215, 0, 0.1);
+        animation: vsBadge 2s ease-in-out infinite;
+        z-index: 10;
+      }
+
+      @keyframes vsBadge {
+        0%,
+        100% {
+          transform: translate(-50%, -50%) scale(1);
+          box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+        }
+        50% {
+          transform: translate(-50%, -50%) scale(1.15);
+          box-shadow:
+            0 0 40px rgba(255, 215, 0, 0.7),
+            inset 0 0 30px rgba(255, 215, 0, 0.2);
+        }
+      }
+
+      /* Player setup */
+      .player-setup {
+        display: flex;
+        gap: 2rem;
+        margin-bottom: 2.5rem;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      .player-card {
+        background: var(--bg-card);
+        border-radius: 16px;
+        padding: 1.5rem;
+        width: 220px;
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.3s;
+      }
+
+      .player-card:hover {
+        transform: translateY(-4px);
+      }
+
+      .player-card.p1 {
+        border: 1px solid rgba(0, 170, 255, 0.4);
+        box-shadow:
+          0 0 30px rgba(0, 170, 255, 0.15),
+          inset 0 0 30px rgba(0, 170, 255, 0.03);
+      }
+      .player-card.p2 {
+        border: 1px solid rgba(255, 34, 68, 0.4);
+        box-shadow:
+          0 0 30px rgba(255, 34, 68, 0.15),
+          inset 0 0 30px rgba(255, 34, 68, 0.03);
+      }
+
+      .player-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+      }
+      .player-card.p1::before {
+        background: linear-gradient(
+          90deg,
+          transparent,
+          var(--p1-color),
+          transparent
+        );
+      }
+      .player-card.p2::before {
+        background: linear-gradient(
+          90deg,
+          transparent,
+          var(--p2-color),
+          transparent
+        );
+      }
+
+      .player-label {
+        font-family: "Orbitron", sans-serif;
+        font-size: 0.65rem;
+        letter-spacing: 4px;
+        margin-bottom: 1rem;
+        text-transform: uppercase;
+      }
+      .p1 .player-label {
+        color: var(--p1-color);
+      }
+      .p2 .player-label {
+        color: var(--p2-color);
+      }
+
+      .avatar-selector {
+        display: flex;
+        gap: 0.4rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+      }
+
+      .avatar-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 1.2rem;
+        background: var(--bg-surface);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .avatar-btn:hover,
+      .avatar-btn.selected {
+        border-color: var(--accent-blue);
+        transform: scale(1.1);
+        background: rgba(0, 170, 255, 0.1);
+      }
+      .p2 .avatar-btn:hover,
+      .p2 .avatar-btn.selected {
+        border-color: var(--p2-color);
+        background: rgba(255, 34, 68, 0.1);
+      }
+
+      .player-name-input {
+        width: 100%;
+        background: var(--bg-surface);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem;
+        color: var(--text-primary);
+        font-family: "Rajdhani", sans-serif;
+        font-size: 1rem;
+        font-weight: 600;
+        transition: border-color 0.2s;
+        outline: none;
+      }
+      .player-card.p1 .player-name-input:focus {
+        border-color: var(--p1-color);
+        box-shadow: 0 0 10px rgba(0, 170, 255, 0.2);
+      }
+      .player-card.p2 .player-name-input:focus {
+        border-color: var(--p2-color);
+        box-shadow: 0 0 10px rgba(255, 34, 68, 0.2);
+      }
+
+      /* Theme Selection */
+      .theme-section {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+
+      .section-label {
+        font-family: "Orbitron", sans-serif;
+        font-size: 0.65rem;
+        letter-spacing: 4px;
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+        text-transform: uppercase;
+      }
+
+      .themes-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+        max-width: 600px;
+      }
+
+      .theme-btn {
+        background: var(--bg-card);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 1rem 0.75rem;
+        cursor: pointer;
+        transition: all 0.25s;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        color: var(--text-primary);
+      }
+
+      .theme-btn:hover {
+        transform: translateY(-3px);
+        border-color: rgba(255, 255, 255, 0.25);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+      }
+
+      .theme-btn.selected {
+        border-color: var(--accent-gold);
+        background: rgba(255, 215, 0, 0.08);
+        box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+      }
+
+      .theme-btn.selected::before {
+        content: "✓";
+        position: absolute;
+        top: 6px;
+        right: 8px;
+        color: var(--accent-gold);
+        font-size: 0.75rem;
+        font-weight: 700;
+      }
+
+      .theme-icon {
+        font-size: 2rem;
+        display: block;
+        margin-bottom: 0.5rem;
+      }
+      .theme-name {
+        font-family: "Rajdhani", sans-serif;
+        font-weight: 700;
+        font-size: 0.9rem;
+      }
+      .theme-count {
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+      }
+
+      /* Buttons */
+      .btn-primary {
+        font-family: "Orbitron", sans-serif;
+        font-weight: 700;
+        font-size: 1rem;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        padding: 1rem 3rem;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s;
+        background: linear-gradient(135deg, #0066cc, var(--accent-blue));
+        color: white;
+        box-shadow: 0 0 30px rgba(0, 170, 255, 0.3);
+      }
+
+      .btn-primary::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255, 255, 255, 0.15),
+          transparent
+        );
+        transition: left 0.5s;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0 50px rgba(0, 170, 255, 0.5);
+      }
+      .btn-primary:hover::before {
+        left: 100%;
+      }
+
+      .btn-danger {
+        background: linear-gradient(135deg, #cc0022, var(--accent-red));
+        box-shadow: 0 0 30px rgba(255, 34, 68, 0.3);
+      }
+      .btn-danger:hover {
+        box-shadow: 0 0 50px rgba(255, 34, 68, 0.5);
+      }
+
+      .btn-gold {
+        background: linear-gradient(135deg, #cc9900, var(--accent-gold));
+        color: #000;
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+      }
+      .btn-gold:hover {
+        box-shadow: 0 0 50px rgba(255, 215, 0, 0.5);
+      }
+
+      .btn-secondary {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: var(--text-secondary);
+        font-family: "Rajdhani", sans-serif;
+        font-weight: 600;
+        font-size: 0.9rem;
+        letter-spacing: 2px;
+        padding: 0.75rem 2rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+      .btn-secondary:hover {
+        border-color: rgba(255, 255, 255, 0.5);
+        color: var(--text-primary);
+      }
+
+      .start-row {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        margin-top: 0.5rem;
+      }
+
+      /* ============ GAME SCREEN ============ */
+      #game-screen {
+        padding: 1rem;
+        gap: 0;
+        justify-content: flex-start;
+      }
+
+      .hud {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        width: 100%;
+        max-width: 900px;
+        margin-bottom: 1.5rem;
+        padding: 0.75rem 1rem;
+        background: var(--bg-card);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      .hud-player {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .hud-player.p2 {
+        flex-direction: row-reverse;
+      }
+
+      .hud-avatar {
+        font-size: 2rem;
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+      .hud-player.p1 .hud-avatar {
+        background: rgba(0, 170, 255, 0.1);
+        border: 1px solid rgba(0, 170, 255, 0.3);
+      }
+      .hud-player.p2 .hud-avatar {
+        background: rgba(255, 34, 68, 0.1);
+        border: 1px solid rgba(255, 34, 68, 0.3);
+      }
+
+      .hud-info {
+        flex: 1;
+      }
+      .hud-player.p2 .hud-info {
+        text-align: right;
+      }
+
+      .hud-name {
+        font-family: "Orbitron", sans-serif;
+        font-size: 0.8rem;
+        font-weight: 700;
+      }
+      .hud-player.p1 .hud-name {
+        color: var(--p1-color);
+      }
+      .hud-player.p2 .hud-name {
+        color: var(--p2-color);
+      }
+
+      .hud-score {
+        font-family: "Orbitron", sans-serif;
+        font-size: 1.6rem;
+        font-weight: 900;
+        line-height: 1;
+      }
+
+      .hud-vs {
+        font-family: "Orbitron", sans-serif;
+        font-size: 1.2rem;
+        font-weight: 900;
+        color: var(--accent-gold);
+        padding: 0 1rem;
+        text-align: center;
+      }
+
+      .hud-vs .q-count {
+        font-size: 0.6rem;
+        color: var(--text-secondary);
+        letter-spacing: 2px;
+        display: block;
+        margin-top: 0.2rem;
+      }
+
+      /* Progress bar */
+      .progress-track {
+        width: 100%;
+        max-width: 900px;
+        margin-bottom: 1.5rem;
+      }
+
+      .progress-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.65rem;
+        letter-spacing: 2px;
+        color: var(--text-secondary);
+        margin-bottom: 0.4rem;
+      }
+
+      .progress-bar-wrap {
+        height: 6px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 3px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .progress-fill {
+        height: 100%;
+        border-radius: 3px;
+        background: linear-gradient(
+          90deg,
+          var(--accent-blue),
+          var(--accent-purple)
+        );
+        transition: width 0.5s ease;
+        position: relative;
+        box-shadow: 0 0 10px var(--accent-blue);
+      }
+
+      /* Current player indicator */
+      .turn-indicator {
+        width: 100%;
+        max-width: 900px;
+        text-align: center;
+        margin-bottom: 1rem;
+        padding: 0.5rem;
+        border-radius: 8px;
+        font-family: "Rajdhani", sans-serif;
+        font-weight: 700;
+        font-size: 0.9rem;
+        letter-spacing: 3px;
+        transition: all 0.4s;
+      }
+
+      .turn-indicator.p1-turn {
+        background: rgba(0, 170, 255, 0.08);
+        border: 1px solid rgba(0, 170, 255, 0.3);
+        color: var(--p1-color);
+        box-shadow: 0 0 20px rgba(0, 170, 255, 0.1);
+      }
+
+      .turn-indicator.p2-turn {
+        background: rgba(255, 34, 68, 0.08);
+        border: 1px solid rgba(255, 34, 68, 0.3);
+        color: var(--p2-color);
+        box-shadow: 0 0 20px rgba(255, 34, 68, 0.1);
+      }
+
+      /* Question Card */
+      .question-container {
+        width: 100%;
+        max-width: 900px;
+        perspective: 1000px;
+      }
+
+      .question-card {
+        background: var(--bg-card);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 20px;
+        padding: 2rem;
+        position: relative;
+        overflow: hidden;
+        animation: cardAppear 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
+      @keyframes cardAppear {
+        0% {
+          transform: translateY(30px) scale(0.95);
+          opacity: 0;
+        }
+        100% {
+          transform: translateY(0) scale(1);
+          opacity: 1;
+        }
+      }
+
+      .question-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        transition: background 0.5s;
+      }
+
+      .question-card.p1-active::before {
+        background: linear-gradient(
+          90deg,
+          transparent,
+          var(--p1-color),
+          transparent
+        );
+      }
+      .question-card.p2-active::before {
+        background: linear-gradient(
+          90deg,
+          transparent,
+          var(--p2-color),
+          transparent
+        );
+      }
+
+      .card-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .theme-tag {
+        font-family: "Orbitron", sans-serif;
+        font-size: 0.6rem;
+        letter-spacing: 3px;
+        padding: 0.3rem 0.75rem;
+        border-radius: 4px;
+        background: rgba(255, 215, 0, 0.1);
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        color: var(--accent-gold);
+        text-transform: uppercase;
+      }
+
+      .q-number {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        margin-left: auto;
+        font-family: "Orbitron", sans-serif;
+      }
+
+      /* Timer */
+      .timer-ring {
+        position: relative;
+        width: 64px;
+        height: 64px;
+        flex-shrink: 0;
+        margin-left: auto;
+      }
+
+      .timer-svg {
+        transform: rotate(-90deg);
+      }
+      .timer-track {
+        fill: none;
+        stroke: rgba(255, 255, 255, 0.08);
+        stroke-width: 4;
+      }
+      .timer-fill {
+        fill: none;
+        stroke-width: 4;
+        stroke-linecap: round;
+        stroke-dasharray: 170;
+        transition:
+          stroke-dashoffset 1s linear,
+          stroke 0.3s;
+      }
+
+      .timer-number {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-family: "Orbitron", sans-serif;
+        font-size: 1.3rem;
+        font-weight: 900;
+      }
+
+      .question-text {
+        font-family: "Exo 2", sans-serif;
+        font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+        font-weight: 600;
+        line-height: 1.5;
+        margin-bottom: 1.5rem;
+        color: var(--text-primary);
+      }
+
+      /* Answer options */
+      .options-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+      }
+
+      .option-btn {
+        background: var(--bg-surface);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        cursor: pointer;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        transition: all 0.2s;
+        color: var(--text-primary);
+        font-family: "Rajdhani", sans-serif;
+        font-size: 1rem;
+        font-weight: 500;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .option-btn:hover:not(:disabled) {
+        border-color: rgba(255, 255, 255, 0.25);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+      }
+
+      .option-btn:disabled {
+        cursor: default;
+      }
+
+      .option-letter {
+        font-family: "Orbitron", sans-serif;
+        font-size: 0.75rem;
+        font-weight: 700;
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        flex-shrink: 0;
+        transition: all 0.2s;
+      }
+
+      .option-btn.correct {
+        background: rgba(0, 255, 136, 0.1);
+        border-color: var(--accent-green);
+        box-shadow: 0 0 20px rgba(0, 255, 136, 0.2);
+        animation: correctPulse 0.6s ease;
+      }
+
+      .option-btn.correct .option-letter {
+        background: var(--accent-green);
+        color: #000;
+        border-color: var(--accent-green);
+      }
+
+      .option-btn.wrong {
+        background: rgba(255, 34, 68, 0.1);
+        border-color: var(--accent-red);
+        animation: wrongShake 0.5s ease;
+      }
+
+      .option-btn.wrong .option-letter {
+        background: var(--accent-red);
+        color: white;
+        border-color: var(--accent-red);
+      }
+
+      @keyframes correctPulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.03);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      @keyframes wrongShake {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+        20% {
+          transform: translateX(-8px);
+        }
+        40% {
+          transform: translateX(8px);
+        }
+        60% {
+          transform: translateX(-5px);
+        }
+        80% {
+          transform: translateX(5px);
+        }
+      }
+
+      /* Answer result overlay */
+      .answer-result {
+        margin-top: 1.5rem;
+        padding: 1.25rem;
+        border-radius: 12px;
+        display: none;
+        animation: fadeSlideUp 0.4s ease;
+        background: var(--bg-surface);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      @keyframes fadeSlideUp {
+        0% {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .answer-result.show {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+      }
+
+      .result-emoji {
+        font-size: 2.5rem;
+        flex-shrink: 0;
+        animation: bounceIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
+      @keyframes bounceIn {
+        0% {
+          transform: scale(0);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      .result-text h4 {
+        font-family: "Orbitron", sans-serif;
+        font-size: 0.85rem;
+        margin-bottom: 0.3rem;
+      }
+
+      .result-text.correct-result h4 {
+        color: var(--accent-green);
+      }
+      .result-text.wrong-result h4 {
+        color: var(--accent-red);
+      }
+
+      .result-text p {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        line-height: 1.5;
+      }
+
+      .result-image {
+        width: 80px;
+        height: 60px;
+        border-radius: 8px;
+        object-fit: cover;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        flex-shrink: 0;
+        font-size: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg-card);
+      }
+
+      /* Score popup */
+      .score-popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        z-index: 1000;
+        font-family: "Orbitron", sans-serif;
+        font-size: 3rem;
+        font-weight: 900;
+        text-shadow: 0 0 30px currentColor;
+        pointer-events: none;
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      .score-popup.show {
+        transform: translate(-50%, -50%) scale(1);
+      }
+      .score-popup.hide {
+        transform: translate(-50%, -100vh) scale(0);
+        transition: transform 0.5s ease-in;
+      }
+
+      /* ============ THEME RESULT SCREEN ============ */
+      #theme-result-screen {
+        padding: 2rem;
+        text-align: center;
+      }
+
+      .theme-result-title {
+        font-family: "Orbitron", sans-serif;
+        font-size: 0.65rem;
+        letter-spacing: 6px;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+      }
+
+      .theme-winner-banner {
+        font-family: "Orbitron", sans-serif;
+        font-size: clamp(2rem, 5vw, 3.5rem);
+        font-weight: 900;
+        margin-bottom: 2rem;
+        animation: winnerGlow 2s ease-in-out infinite;
+      }
+
+      @keyframes winnerGlow {
+        0%,
+        100% {
+          filter: drop-shadow(0 0 10px currentColor);
+        }
+        50% {
+          filter: drop-shadow(0 0 30px currentColor)
+            drop-shadow(0 0 60px currentColor);
+        }
+      }
+
+      .results-cards {
+        display: flex;
+        gap: 2rem;
+        justify-content: center;
+        margin-bottom: 2.5rem;
+        flex-wrap: wrap;
+      }
+
+      .result-card {
+        background: var(--bg-card);
+        border-radius: 16px;
+        padding: 1.5rem 2rem;
+        min-width: 220px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .result-card.winner::before {
+        content: "🏆";
+        position: absolute;
+        top: -1rem;
+        right: 1rem;
+        font-size: 2rem;
+        animation: float 2s ease-in-out infinite;
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-8px);
+        }
+      }
+
+      .result-card.p1-card {
+        border: 1px solid rgba(0, 170, 255, 0.4);
+        box-shadow: 0 0 30px rgba(0, 170, 255, 0.15);
+      }
+      .result-card.p2-card {
+        border: 1px solid rgba(255, 34, 68, 0.4);
+        box-shadow: 0 0 30px rgba(255, 34, 68, 0.15);
+      }
+
+      .rc-avatar {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+      }
+      .rc-name {
+        font-family: "Orbitron", sans-serif;
+        font-size: 0.85rem;
+        margin-bottom: 1rem;
+      }
+      .p1-card .rc-name {
+        color: var(--p1-color);
+      }
+      .p2-card .rc-name {
+        color: var(--p2-color);
+      }
+
+      .rc-big-score {
+        font-family: "Orbitron", sans-serif;
+        font-size: 3rem;
+        font-weight: 900;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+      }
+
+      .rc-stat {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.3rem 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+      }
+
+      .rc-stat span:last-child {
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+
+      .stat-correct {
+        color: var(--accent-green) !important;
+      }
+      .stat-wrong {
+        color: var(--accent-red) !important;
+      }
+
+      /* Fireworks */
+      .fireworks {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+        z-index: 999;
+      }
+
+      .firework {
+        position: absolute;
+        border-radius: 50%;
+        animation: fireworkExplode 1s ease-out forwards;
+      }
+
+      @keyframes fireworkExplode {
+        0% {
+          transform: scale(0);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1);
+          opacity: 0.8;
+        }
+        100% {
+          transform: scale(1.5);
+          opacity: 0;
+        }
+      }
+
+      /* ============ FINAL SCREEN ============ */
+      #final-screen {
+        padding: 2rem;
+        text-align: center;
+      }
+
+      .champion-text {
+        font-family: "Orbitron", sans-serif;
+        font-size: 0.65rem;
+        letter-spacing: 6px;
+        color: var(--accent-gold);
+        margin-bottom: 0.5rem;
+      }
+
+      .champion-name {
+        font-family: "Orbitron", sans-serif;
+        font-size: clamp(2.5rem, 6vw, 5rem);
+        font-weight: 900;
+        background: linear-gradient(
+          135deg,
+          var(--accent-gold),
+          #fff,
+          var(--accent-gold)
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 0.5rem;
+        animation: championGlow 2s ease-in-out infinite;
+      }
+
+      @keyframes championGlow {
+        0%,
+        100% {
+          filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.5));
+        }
+        50% {
+          filter: drop-shadow(0 0 50px rgba(255, 215, 0, 0.9))
+            drop-shadow(0 0 100px rgba(255, 215, 0, 0.5));
+        }
+      }
+
+      .champion-subtitle {
+        font-family: "Rajdhani", sans-serif;
+        font-size: 1.2rem;
+        color: var(--text-secondary);
+        margin-bottom: 2.5rem;
+      }
+
+      .final-trophies {
+        font-size: 3rem;
+        margin-bottom: 0.5rem;
+        animation: float 2s ease-in-out infinite;
+      }
+
+      .final-scores {
+        display: flex;
+        gap: 2rem;
+        justify-content: center;
+        margin-bottom: 2.5rem;
+        flex-wrap: wrap;
+      }
+
+      .final-actions {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      /* ============ LOADING / TRANSITION ============ */
+      .screen-transition {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--bg-deep);
+        z-index: 9998;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+
+      .screen-transition.active {
+        opacity: 1;
+        pointer-events: all;
+      }
+
+      .transition-vs {
+        font-family: "Orbitron", sans-serif;
+        font-size: 4rem;
+        font-weight: 900;
+        color: var(--accent-gold);
+        animation: transitionPulse 0.5s ease-in-out infinite;
+      }
+
+      @keyframes transitionPulse {
+        0%,
+        100% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.2);
+        }
+      }
+
+      /* ============ LEADERBOARD ============ */
+      #leaderboard-section {
+        margin-top: 1rem;
+        width: 100%;
+        max-width: 500px;
+      }
+
+      .leaderboard-title {
+        font-family: "Orbitron", sans-serif;
+        font-size: 0.65rem;
+        letter-spacing: 4px;
+        color: var(--text-secondary);
+        margin-bottom: 0.75rem;
+      }
+
+      .lb-entry {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        background: var(--bg-card);
+        border-radius: 8px;
+        margin-bottom: 0.4rem;
+        font-size: 0.85rem;
+      }
+
+      .lb-rank {
+        font-family: "Orbitron", sans-serif;
+        font-size: 0.75rem;
+        font-weight: 700;
+        width: 24px;
+        text-align: center;
+        color: var(--text-secondary);
+      }
+
+      .lb-entry:nth-child(1) .lb-rank {
+        color: var(--accent-gold);
+      }
+      .lb-entry:nth-child(2) .lb-rank {
+        color: #ccc;
+      }
+      .lb-entry:nth-child(3) .lb-rank {
+        color: #cd7f32;
+      }
+
+      .lb-name {
+        flex: 1;
+        font-weight: 600;
+      }
+      .lb-score {
+        font-family: "Orbitron", sans-serif;
+        font-size: 0.85rem;
+        color: var(--accent-gold);
+      }
+      .lb-date {
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+      }
+
+      /* ============ RESPONSIVE ============ */
+      @media (max-width: 600px) {
+        .themes-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .options-grid {
+          grid-template-columns: 1fr;
+        }
+        .results-cards {
+          gap: 1rem;
+        }
+        .player-setup {
+          gap: 1rem;
+        }
+        .player-card {
+          width: 160px;
+          padding: 1rem;
+        }
+        .hud {
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+        .hud-player,
+        .hud-player.p2 {
+          flex-direction: row;
+        }
+      }
+
+      /* Shake screen */
+      @keyframes screenShake {
+        0%,
+        100% {
+          transform: translate(0);
+        }
+        20% {
+          transform: translate(-5px, 3px);
+        }
+        40% {
+          transform: translate(5px, -3px);
+        }
+        60% {
+          transform: translate(-3px, 5px);
+        }
+        80% {
+          transform: translate(3px, -3px);
+        }
+      }
+
+      .shake {
+        animation: screenShake 0.5s ease;
+      }
+
+      /* Glow active player */
+      .active-glow-p1 {
+        animation: glowP1 1s ease-in-out;
+      }
+      .active-glow-p2 {
+        animation: glowP2 1s ease-in-out;
+      }
+
+      @keyframes glowP1 {
+        0%,
+        100% {
+          box-shadow: none;
+        }
+        50% {
+          box-shadow: 0 0 30px rgba(0, 170, 255, 0.4);
+        }
+      }
+      @keyframes glowP2 {
+        0%,
+        100% {
+          box-shadow: none;
+        }
+        50% {
+          box-shadow: 0 0 30px rgba(255, 34, 68, 0.4);
+        }
+      }
+
+      /* Combo badge */
+      .combo-badge {
+        display: inline-block;
+        font-family: "Orbitron", sans-serif;
+        font-size: 0.7rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        margin-left: 0.5rem;
+        background: rgba(255, 215, 0, 0.2);
+        color: var(--accent-gold);
+        border: 1px solid rgba(255, 215, 0, 0.4);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="particles"></div>
+    <div class="screen-transition" id="transitionOverlay">
+      <div class="transition-vs">⚡</div>
+    </div>
+
+    <!-- ============ HOME SCREEN ============ -->
+    <div class="screen active" id="home-screen">
+      <div class="logo-container">
+        <div class="logo-badge">⚡ Mode compétition locale ⚡</div>
+        <div class="logo-title">
+          <span class="duel">DUEL</span>
+          <span class="vs-badge">VS</span>
+          <span class="quiz">QUIZ</span>
+        </div>
+      </div>
+
+      <div class="player-setup">
+        <div class="player-card p1" id="p1-card">
+          <div class="player-label">⚡ Joueur 1</div>
+          <div class="avatar-selector" id="p1-avatars"></div>
+          <input
+            type="text"
+            class="player-name-input"
+            id="p1-name"
+            placeholder="Pseudo..."
+            maxlength="12"
+            value="Joueur 1"
+          />
+        </div>
+        <div class="player-card p2" id="p2-card">
+          <div class="player-label">🔥 Joueur 2</div>
+          <div class="avatar-selector" id="p2-avatars"></div>
+          <input
+            type="text"
+            class="player-name-input"
+            id="p2-name"
+            placeholder="Pseudo..."
+            maxlength="12"
+            value="Joueur 2"
+          />
+        </div>
+      </div>
+
+      <div class="theme-section">
+        <div class="section-label">Choisir un thème</div>
+        <div class="themes-grid" id="themes-grid"></div>
+      </div>
+
+      <div class="start-row">
+        <button class="btn-primary" onclick="startGame()">
+          ⚡ COMMENCER LE DUEL
+        </button>
+        <button class="btn-secondary" onclick="showLeaderboard()">
+          🏆 Classement
+        </button>
+      </div>
+
+      <div id="home-leaderboard" style="display: none; margin-top: 1.5rem">
+        <div class="leaderboard-title">🏆 CLASSEMENT LOCAL</div>
+        <div id="lb-entries"></div>
+      </div>
+    </div>
+
+    <!-- ============ GAME SCREEN ============ -->
+    <div class="screen" id="game-screen">
+      <div class="hud" id="hud">
+        <div class="hud-player p1" id="hud-p1">
+          <div class="hud-avatar" id="hud-p1-avatar">😎</div>
+          <div class="hud-info">
+            <div class="hud-name" id="hud-p1-name">P1</div>
+            <div
+              class="hud-score"
+              id="hud-p1-score"
+              style="color: var(--p1-color)"
+            >
+              0
+            </div>
+          </div>
+        </div>
+        <div class="hud-vs">
+          VS
+          <span class="q-count" id="hud-qcount">Q 1/10</span>
+        </div>
+        <div class="hud-player p2" id="hud-p2">
+          <div class="hud-avatar" id="hud-p2-avatar">🔥</div>
+          <div class="hud-info">
+            <div class="hud-name" id="hud-p2-name">P2</div>
+            <div
+              class="hud-score"
+              id="hud-p2-score"
+              style="color: var(--p2-color)"
+            >
+              0
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="progress-track">
+        <div class="progress-labels">
+          <span id="prog-theme">Culture Générale</span>
+          <span id="prog-pct">0%</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <div class="turn-indicator p1-turn" id="turn-indicator">
+        🎮 TOUR DE JOUEUR 1
+      </div>
+
+      <div class="question-container">
+        <div class="question-card p1-active" id="question-card">
+          <div class="card-header">
+            <div class="theme-tag" id="q-theme-tag">Culture Générale</div>
+            <div class="q-number" id="q-number">Q1</div>
+            <div class="timer-ring">
+              <svg class="timer-svg" viewBox="0 0 64 64" width="64" height="64">
+                <circle class="timer-track" cx="32" cy="32" r="27" />
+                <circle
+                  class="timer-fill"
+                  id="timer-circle"
+                  cx="32"
+                  cy="32"
+                  r="27"
+                  stroke="var(--accent-green)"
+                />
+              </svg>
+              <div class="timer-number" id="timer-display">15</div>
+            </div>
+          </div>
+          <div class="question-text" id="question-text">
+            Question chargement...
+          </div>
+          <div class="options-grid" id="options-grid"></div>
+          <div class="answer-result" id="answer-result">
+            <div class="result-image" id="result-image">🖼️</div>
+            <div class="result-text" id="result-text">
+              <h4 id="result-title">Correct!</h4>
+              <p id="result-explain">Explication ici</p>
+            </div>
+            <div class="result-emoji" id="result-emoji">✅</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ THEME RESULT SCREEN ============ -->
+    <div class="screen" id="theme-result-screen">
+      <div class="fireworks" id="fireworks"></div>
+      <div class="theme-result-title">RÉSULTATS DU THÈME</div>
+      <div class="theme-winner-banner" id="theme-winner-banner">
+        🏆 Joueur 1 remporte le thème!
+      </div>
+      <div class="results-cards" id="theme-results-cards"></div>
+      <div class="start-row">
+        <button class="btn-primary" id="continue-btn" onclick="nextTheme()">
+          ➡️ SUITE
+        </button>
+        <button class="btn-secondary" onclick="goHome()">🏠 Accueil</button>
+      </div>
+    </div>
+
+    <!-- ============ FINAL SCREEN ============ -->
+    <div class="screen" id="final-screen">
+      <div class="fireworks" id="final-fireworks"></div>
+      <div class="final-trophies">🏆🥇🏆</div>
+      <div class="champion-text">⚡ CHAMPION DU DUEL ⚡</div>
+      <div class="champion-name" id="champion-name">JOUEUR 1</div>
+      <div class="champion-subtitle" id="champion-subtitle">
+        Victoire écrasante — Félicitations!
+      </div>
+      <div class="final-scores" id="final-scores"></div>
+      <div class="final-actions">
+        <button class="btn-gold" onclick="rematch()">🔁 REVANCHE</button>
+        <button class="btn-primary" onclick="goHome()">
+          🎮 NOUVEL ADVERSAIRE
+        </button>
+        <button class="btn-secondary" onclick="goHome()">🏠 ACCUEIL</button>
+      </div>
+    </div>
+
+    <script>
+      // ============ DATA ============
+      const THEMES = {
+        culture: {
+          name: "Culture Générale",
+          icon: "🌍",
+          color: "#0af",
+          questions: [
+            {
+              q: "Quelle est la capitale de l'Australie?",
+              opts: ["Sydney", "Melbourne", "Canberra", "Brisbane"],
+              a: 2,
+              explain:
+                "Canberra est la capitale depuis 1913, choisie comme compromis entre Sydney et Melbourne.",
+              emoji: "🦘",
+            },
+            {
+              q: "Combien de continents y a-t-il sur Terre?",
+              opts: ["5", "6", "7", "8"],
+              a: 2,
+              explain:
+                "Les 7 continents sont : Afrique, Antarctique, Asie, Europe, Amérique du Nord, Océanie et Amérique du Sud.",
+              emoji: "🌍",
+            },
+            {
+              q: "Quel est le plus grand océan du monde?",
+              opts: ["Atlantique", "Indien", "Arctique", "Pacifique"],
+              a: 3,
+              explain:
+                "L'océan Pacifique couvre environ 165 millions de km², soit plus que toutes les terres émergées réunies!",
+              emoji: "🌊",
+            },
+            {
+              q: "Quelle langue est la plus parlée au monde (locuteurs natifs)?",
+              opts: ["Anglais", "Espagnol", "Mandarin", "Hindi"],
+              a: 2,
+              explain:
+                "Le mandarin compte environ 920 millions de locuteurs natifs, suivi de l'espagnol et de l'anglais.",
+              emoji: "🗣️",
+            },
+            {
+              q: "Qui a peint La Joconde?",
+              opts: [
+                "Michel-Ange",
+                "Raphaël",
+                "Léonard de Vinci",
+                "Botticelli",
+              ],
+              a: 2,
+              explain:
+                "Léonard de Vinci a peint la Joconde entre 1503 et 1519. Elle est exposée au Louvre à Paris.",
+              emoji: "🎨",
+            },
+            {
+              q: "Quel est le pays le plus grand du monde?",
+              opts: ["États-Unis", "Canada", "Chine", "Russie"],
+              a: 3,
+              explain:
+                "La Russie couvre 17,1 millions de km², soit environ 11% de la surface terrestre totale.",
+              emoji: "🗺️",
+            },
+            {
+              q: "Quelle est la monnaie du Japon?",
+              opts: ["Yuan", "Won", "Yen", "Baht"],
+              a: 2,
+              explain:
+                "Le Yen japonais (¥) est l'une des monnaies les plus échangées au monde.",
+              emoji: "💴",
+            },
+            {
+              q: "Combien d'os a le corps humain adulte?",
+              opts: ["186", "206", "226", "256"],
+              a: 1,
+              explain:
+                "Le corps humain adulte contient 206 os. Les bébés naissent avec environ 270-300 os qui fusionnent en grandissant.",
+              emoji: "🦴",
+            },
+            {
+              q: "Quelle est la planète la plus proche du Soleil?",
+              opts: ["Vénus", "Mars", "Mercure", "Terre"],
+              a: 2,
+              explain:
+                "Mercure est à 57,9 millions de km du Soleil. Sa température varie de -180°C à +430°C!",
+              emoji: "☿",
+            },
+            {
+              q: "Quel pays a inventé la pizza?",
+              opts: ["Grèce", "France", "Espagne", "Italie"],
+              a: 3,
+              explain:
+                "La pizza moderne est née à Naples, Italie, au XVIIIe siècle. La Margherita fut créée en 1889.",
+              emoji: "🍕",
+            },
+            {
+              q: "Quel est l'animal le plus rapide du monde?",
+              opts: ["Lion", "Guépard", "Faucon pèlerin", "Aigle"],
+              a: 2,
+              explain:
+                "Le guépard court à 120 km/h sur courtes distances. En vol, le faucon pèlerin atteint 390 km/h en piqué!",
+              emoji: "🐆",
+            },
+            {
+              q: "Combien de pays composent l'Union Européenne en 2024?",
+              opts: ["25", "27", "28", "30"],
+              a: 1,
+              explain:
+                "L'UE compte 27 pays membres depuis le Brexit du Royaume-Uni effectif en 2020.",
+              emoji: "🇪🇺",
+            },
+            {
+              q: "Quel est le fleuve le plus long du monde?",
+              opts: ["Amazone", "Congo", "Mississippi", "Nil"],
+              a: 3,
+              explain:
+                "Le Nil mesure environ 6 650 km de long. Il traverse 11 pays africains.",
+              emoji: "🌊",
+            },
+            {
+              q: "Qui a écrit 'Les Misérables'?",
+              opts: [
+                "Émile Zola",
+                "Gustave Flaubert",
+                "Victor Hugo",
+                "Alexandre Dumas",
+              ],
+              a: 2,
+              explain:
+                "Victor Hugo a publié Les Misérables en 1862. Ce roman a été adapté en comédie musicale mondiale.",
+              emoji: "📚",
+            },
+            {
+              q: "Quel est le symbole chimique de l'or?",
+              opts: ["Or", "Go", "Ag", "Au"],
+              a: 3,
+              explain:
+                "Au vient du latin 'aurum'. L'or est l'un des rares métaux qui ne rouille pas et ne se ternit presque pas.",
+              emoji: "🥇",
+            },
+            {
+              q: "En quelle année l'homme a-t-il marché sur la Lune pour la première fois?",
+              opts: ["1965", "1967", "1969", "1971"],
+              a: 2,
+              explain:
+                "Neil Armstrong a posé le pied sur la Lune le 20 juillet 1969, lors de la mission Apollo 11.",
+              emoji: "🌙",
+            },
+            {
+              q: "Quelle est la capitale de la Chine?",
+              opts: ["Shanghai", "Hong Kong", "Canton", "Pékin"],
+              a: 3,
+              explain:
+                "Pékin (Beijing) est la capitale de la Chine depuis 1420. Elle abrite la Cité Interdite.",
+              emoji: "🏯",
+            },
+            {
+              q: "Combien de cordes a une guitare classique?",
+              opts: ["4", "5", "6", "7"],
+              a: 2,
+              explain:
+                "La guitare classique a 6 cordes. Accordées en Mi-La-Ré-Sol-Si-Mi, de la plus grave à la plus aiguë.",
+              emoji: "🎸",
+            },
+            {
+              q: "Quel pays a la plus grande population au monde?",
+              opts: ["Inde", "Chine", "États-Unis", "Indonésie"],
+              a: 0,
+              explain:
+                "En 2023, l'Inde a dépassé la Chine avec plus de 1,4 milliard d'habitants!",
+              emoji: "👥",
+            },
+            {
+              q: "Quel est le sport le plus populaire au monde?",
+              opts: ["Basketball", "Cricket", "Tennis", "Football"],
+              a: 3,
+              explain:
+                "Le football compte plus de 4 milliards de fans dans le monde, soit la moitié de la population mondiale!",
+              emoji: "⚽",
+            },
+            {
+              q: "Quelle est la plus haute montagne du monde?",
+              opts: ["K2", "Mont Blanc", "Kilimanjaro", "Everest"],
+              a: 3,
+              explain:
+                "L'Everest culmine à 8 849 mètres d'altitude dans l'Himalaya, à la frontière du Népal et du Tibet.",
+              emoji: "🏔️",
+            },
+            {
+              q: "Combien de joueurs composent une équipe de basketball?",
+              opts: ["4", "5", "6", "7"],
+              a: 1,
+              explain:
+                "5 joueurs de chaque équipe sont sur le terrain simultanément, avec des remplaçants sur le banc.",
+              emoji: "🏀",
+            },
+          ],
+        },
+        tech: {
+          name: "Technologie",
+          icon: "💻",
+          color: "#9b4dff",
+          questions: [
+            {
+              q: "Que signifie 'HTTP'?",
+              opts: [
+                "HyperText Transfer Protocol",
+                "High Tech Transfer Process",
+                "Hybrid Text Telecom Protocol",
+                "Home Technology Transfer Port",
+              ],
+              a: 0,
+              explain:
+                "HTTP est la base de la communication sur le Web, défini en 1991 par Tim Berners-Lee.",
+              emoji: "🌐",
+            },
+            {
+              q: "Quel langage de programmation a créé Python?",
+              opts: [
+                "Dennis Ritchie",
+                "James Gosling",
+                "Linus Torvalds",
+                "Guido van Rossum",
+              ],
+              a: 3,
+              explain:
+                "Guido van Rossum a créé Python en 1991. Le nom vient de l'émission comique Monty Python's Flying Circus.",
+              emoji: "🐍",
+            },
+            {
+              q: "Que signifie 'AI'?",
+              opts: [
+                "Automated Interface",
+                "Advanced Internet",
+                "Artificial Intelligence",
+                "Applied Innovation",
+              ],
+              a: 2,
+              explain:
+                "AI (Artificial Intelligence) désigne les systèmes informatiques capables d'effectuer des tâches nécessitant normalement l'intelligence humaine.",
+              emoji: "🤖",
+            },
+            {
+              q: "Combien de bits contient 1 octet (byte)?",
+              opts: ["4", "6", "8", "16"],
+              a: 2,
+              explain:
+                "1 octet = 8 bits. C'est l'unité de base du stockage informatique depuis les années 1960.",
+              emoji: "💾",
+            },
+            {
+              q: "Quelle entreprise a créé l'iPhone?",
+              opts: ["Samsung", "Google", "Microsoft", "Apple"],
+              a: 3,
+              explain:
+                "Apple a lancé le premier iPhone le 9 janvier 2007, présenté par Steve Jobs. Il a révolutionné l'industrie mobile.",
+              emoji: "📱",
+            },
+            {
+              q: "Que signifie 'CPU'?",
+              opts: [
+                "Central Processing Unit",
+                "Computer Power Unit",
+                "Core Program Utility",
+                "Central Program Uplink",
+              ],
+              a: 0,
+              explain:
+                "Le CPU (processeur) est le cerveau de l'ordinateur. Il exécute les instructions des programmes.",
+              emoji: "⚙️",
+            },
+            {
+              q: "Quel est le système d'exploitation le plus utilisé sur PC?",
+              opts: ["macOS", "Linux", "ChromeOS", "Windows"],
+              a: 3,
+              explain:
+                "Windows détient environ 72% du marché des OS de bureau à travers le monde.",
+              emoji: "🖥️",
+            },
+            {
+              q: "Qui a cofondé Microsoft?",
+              opts: ["Steve Jobs", "Jeff Bezos", "Bill Gates", "Elon Musk"],
+              a: 2,
+              explain:
+                "Bill Gates et Paul Allen ont fondé Microsoft en 1975. Bill Gates avait alors seulement 19 ans.",
+              emoji: "💼",
+            },
+            {
+              q: "Que signifie 'URL'?",
+              opts: [
+                "Universal Resource Locator",
+                "Uniform Resource Locator",
+                "United Relay Link",
+                "Universal Relay Language",
+              ],
+              a: 1,
+              explain:
+                "Une URL est l'adresse d'une ressource sur internet, comme https://www.example.com",
+              emoji: "🔗",
+            },
+            {
+              q: "Quel est le plus grand réseau social au monde?",
+              opts: ["Instagram", "Twitter/X", "TikTok", "Facebook"],
+              a: 3,
+              explain:
+                "Meta/Facebook dépasse les 3 milliards d'utilisateurs actifs mensuels en 2024.",
+              emoji: "📘",
+            },
+            {
+              q: "En informatique, que signifie 'RAM'?",
+              opts: [
+                "Remote Access Memory",
+                "Random Access Memory",
+                "Read-only Active Memory",
+                "Rapid Array Memory",
+              ],
+              a: 1,
+              explain:
+                "La RAM est la mémoire vive de l'ordinateur. Elle stocke temporairement les données en cours d'utilisation.",
+              emoji: "🧠",
+            },
+            {
+              q: "Quel langage est principalement utilisé pour les pages web?",
+              opts: ["Python", "Java", "C++", "HTML"],
+              a: 3,
+              explain:
+                "HTML (HyperText Markup Language) est le langage standard de structure des pages web, créé par Tim Berners-Lee.",
+              emoji: "🌍",
+            },
+            {
+              q: "Que représente le '5G'?",
+              opts: [
+                "5ème génération de réseau mobile",
+                "5 Gigabits par seconde",
+                "5ème protocole Gigabit",
+                "5 groupes de fréquences",
+              ],
+              a: 0,
+              explain:
+                "La 5G est la 5ème génération de réseau mobile, jusqu'à 100x plus rapide que la 4G.",
+              emoji: "📡",
+            },
+            {
+              q: "Qui a inventé le World Wide Web?",
+              opts: [
+                "Bill Gates",
+                "Tim Berners-Lee",
+                "Mark Zuckerberg",
+                "Steve Jobs",
+              ],
+              a: 1,
+              explain:
+                "Tim Berners-Lee a inventé le Web en 1989 au CERN. Il a rendu son invention accessible gratuitement à tous.",
+              emoji: "🌐",
+            },
+            {
+              q: "Quel format de fichier est principalement utilisé pour les images?",
+              opts: ["MP4", "PDF", "JPEG", "DOCX"],
+              a: 2,
+              explain:
+                "JPEG est le format d'image le plus répandu sur internet, offrant une bonne compression avec qualité acceptable.",
+              emoji: "🖼️",
+            },
+            {
+              q: "Quelle entreprise développe le processeur M1/M2?",
+              opts: ["Intel", "AMD", "Qualcomm", "Apple"],
+              a: 3,
+              explain:
+                "Apple a développé ses propres puces M1 (2020) et M2 (2022), basées sur l'architecture ARM, très efficaces.",
+              emoji: "💎",
+            },
+            {
+              q: "Que signifie 'VPN'?",
+              opts: [
+                "Virtual Private Network",
+                "Verified Protocol Network",
+                "Variable Processing Node",
+                "Virtual Public Network",
+              ],
+              a: 0,
+              explain:
+                "Un VPN crée un tunnel crypté entre l'appareil et internet, protégeant la vie privée et l'anonymat.",
+              emoji: "🔒",
+            },
+            {
+              q: "Quel est le moteur de recherche le plus utilisé au monde?",
+              opts: ["Bing", "Yahoo", "DuckDuckGo", "Google"],
+              a: 3,
+              explain:
+                "Google détient environ 92% du marché mondial des moteurs de recherche en 2024.",
+              emoji: "🔍",
+            },
+            {
+              q: "Quelle entreprise a créé Android?",
+              opts: ["Samsung", "Apple", "Google", "HTC"],
+              a: 2,
+              explain:
+                "Google a acquis Android Inc. en 2005. Le premier téléphone Android commercial est sorti en 2008.",
+              emoji: "🤖",
+            },
+            {
+              q: "Que signifie 'USB'?",
+              opts: [
+                "Universal System Bus",
+                "Unified Serial Bridge",
+                "Universal Serial Bus",
+                "Ultra Speed Board",
+              ],
+              a: 2,
+              explain:
+                "USB (Universal Serial Bus) est un standard de connexion créé en 1996, permettant de connecter des périphériques.",
+              emoji: "🔌",
+            },
+            {
+              q: "Quel est le langage le plus utilisé pour le développement web frontend?",
+              opts: ["TypeScript", "Python", "Java", "JavaScript"],
+              a: 3,
+              explain:
+                "JavaScript est le seul langage natif des navigateurs web. Il est utilisé par plus de 97% des sites web.",
+              emoji: "⚡",
+            },
+            {
+              q: "Qu'est-ce qu'un 'algorithme'?",
+              opts: [
+                "Un type de virus",
+                "Un logiciel antivirus",
+                "Une suite d'instructions pour résoudre un problème",
+                "Un composant matériel",
+              ],
+              a: 2,
+              explain:
+                "Un algorithme est une séquence d'étapes définies pour résoudre un problème ou accomplir une tâche.",
+              emoji: "🧮",
+            },
+          ],
+        },
+        anime: {
+          name: "Anime / Manga",
+          icon: "⛩️",
+          color: "#ff6688",
+          questions: [
+            {
+              q: "Quel est le vrai nom de Naruto?",
+              opts: [
+                "Naruto Hatake",
+                "Naruto Sarutobi",
+                "Naruto Namikaze",
+                "Naruto Senju",
+              ],
+              a: 2,
+              explain:
+                "Naruto Uzumaki est le fils de Minato Namikaze (le 4ème Hokage) et Kushina Uzumaki. Il a hérité du nom de sa mère.",
+              emoji: "🍜",
+            },
+            {
+              q: "Dans Dragon Ball Z, quel est le niveau de transformation au-delà de Super Saiyan?",
+              opts: [
+                "Super Saiyan God",
+                "Super Saiyan 2",
+                "Super Saiyan Blue",
+                "Ultra Instinct",
+              ],
+              a: 1,
+              explain:
+                "Super Saiyan 2 est le premier niveau au-delà de Super Saiyan, atteint par Gohan lors du combat contre Cell.",
+              emoji: "⚡",
+            },
+            {
+              q: "Qui est l'auteur de One Piece?",
+              opts: [
+                "Masashi Kishimoto",
+                "Akira Toriyama",
+                "Tite Kubo",
+                "Eiichiro Oda",
+              ],
+              a: 3,
+              explain:
+                "Eiichiro Oda a commencé One Piece en 1997. C'est le manga le plus vendu de l'histoire avec plus de 530 millions d'exemplaires!",
+              emoji: "☠️",
+            },
+            {
+              q: "Dans Demon Slayer, quel est le rang le plus élevé des Piliers?",
+              opts: [
+                "Pilier de la Lune",
+                "Pilier du Soleil",
+                "Pilier du Son",
+                "Hashira",
+              ],
+              a: 3,
+              explain:
+                "Les Hashira (Piliers) sont les guerriers d'élite du Corps des Tueurs de Démons, 9 en tout.",
+              emoji: "⚔️",
+            },
+            {
+              q: "Quel anime se déroule dans la ville de Namimori?",
+              opts: [
+                "Gintama",
+                "Bleach",
+                "Katekyo Hitman Reborn",
+                "Hunter x Hunter",
+              ],
+              a: 2,
+              explain:
+                "Katekyo Hitman Reborn se déroule à Namimori, où Tsunayoshi Sawada devient le futur boss de la famille Vongola.",
+              emoji: "🔥",
+            },
+            {
+              q: "Dans Attack on Titan, qui est le Titan Colossal au début de l'histoire?",
+              opts: [
+                "Reiner Braun",
+                "Bertolt Hoover",
+                "Armin Arlelt",
+                "Annie Leonhart",
+              ],
+              a: 1,
+              explain:
+                "Bertolt Hoover était le Titan Colossal. Sa taille atteint 60 mètres et il peut produire d'énormes quantités de vapeur.",
+              emoji: "⚔️",
+            },
+            {
+              q: "Quel est le fruit du démon de Luffy dans One Piece?",
+              opts: ["Gum-Gum", "Flame-Flame", "Para-Para", "Magu-Magu"],
+              a: 0,
+              explain:
+                "Luffy a mangé le Fruit Gum-Gum (Gomu Gomu no Mi) qui lui confère un corps élastique comme du caoutchouc.",
+              emoji: "🍖",
+            },
+            {
+              q: "Dans My Hero Academia, quel est le Quirk de Deku?",
+              opts: [
+                "Zero Gravity",
+                "Explosion",
+                "One For All",
+                "Half-Cold Half-Hot",
+              ],
+              a: 2,
+              explain:
+                "One For All est un Quirk légendaire transmis de génération en génération, qui accumulait de la puissance.",
+              emoji: "💪",
+            },
+            {
+              q: "Quel studio a produit Spirited Away?",
+              opts: [
+                "Toei Animation",
+                "Kyoto Animation",
+                "Bones",
+                "Studio Ghibli",
+              ],
+              a: 3,
+              explain:
+                "Studio Ghibli, fondé par Hayao Miyazaki, a produit Le Voyage de Chihiro (Spirited Away) en 2001. Oscar du meilleur film d'animation!",
+              emoji: "🐉",
+            },
+            {
+              q: "Dans Death Note, quel est le nom du dieu de la mort qui donne son carnet à Light?",
+              opts: ["Gelus", "Rem", "Sidoh", "Ryuk"],
+              a: 3,
+              explain:
+                "Ryuk est un Shinigami qui se lasse de la monotonie du monde des dieux de la mort et laisse tomber son Death Note.",
+              emoji: "📓",
+            },
+            {
+              q: "Combien de membres composent les 7 Grands Corsaires dans One Piece?",
+              opts: ["5", "6", "7", "8"],
+              a: 2,
+              explain:
+                "Les 7 Grands Corsaires (Shichibukai) sont 7 pirates puissants alliés au Gouvernement Mondial.",
+              emoji: "⚓",
+            },
+            {
+              q: "Dans Fullmetal Alchemist Brotherhood, quel est le nom du personnage qui a perdu son corps entier?",
+              opts: ["Edward Elric", "Roy Mustang", "Alphonse Elric", "Scar"],
+              a: 2,
+              explain:
+                "Alphonse Elric a perdu tout son corps lors de la tentative de transmutation pour ressusciter leur mère. Son âme est liée à une armure.",
+              emoji: "⚗️",
+            },
+            {
+              q: "Quel anime met en scène des duels de cartes avec des 'Monstres, Pièges et Sorts'?",
+              opts: ["Beyblade", "Bakugan", "Yu-Gi-Oh!", "Cardfight Vanguard"],
+              a: 2,
+              explain:
+                "Yu-Gi-Oh! a démarré comme manga en 1996 par Kazuki Takahashi, puis est devenu un anime culte et un jeu de cartes mondial.",
+              emoji: "🃏",
+            },
+            {
+              q: "Dans Naruto, quel est le nom de la technique signature de Naruto?",
+              opts: [
+                "Rasengan",
+                "Shadow Clone",
+                "Chidori",
+                "Rasengan Multi-Form",
+              ],
+              a: 0,
+              explain:
+                "Le Rasengan est une technique créée par Minato Namikaze. Naruto l'a appris de son parrain Jiraiya.",
+              emoji: "🌀",
+            },
+            {
+              q: "Quelle est la forme finale de Frieza dans Dragon Ball Z?",
+              opts: [
+                "100% Full Power",
+                "Mecha Frieza",
+                "Golden Frieza",
+                "True Form",
+              ],
+              a: 3,
+              explain:
+                "La Vraie Forme (True Form) de Frieza est la plus puissante de ses 4 transformations, révélée sur la planète Namek.",
+              emoji: "👾",
+            },
+            {
+              q: "Dans Bleach, quel est le titre des capitaines des divisions?",
+              opts: ["Espada", "Gotei", "Shinigami", "Taicho"],
+              a: 3,
+              explain:
+                "Taicho (大隊長) signifie Capitaine en japonais. Les 13 Divisions de Gotei 13 sont chacune dirigée par un Taicho.",
+              emoji: "⚔️",
+            },
+            {
+              q: "Quel personnage d'anime dit souvent 'Dattebayo'?",
+              opts: ["Goku", "Ichigo", "Naruto", "Luffy"],
+              a: 2,
+              explain:
+                "Naruto Uzumaki utilise constamment 'Dattebayo!' comme tic de langage, traduit en français par 'Croyez-moi!'",
+              emoji: "🍥",
+            },
+            {
+              q: "Dans Hunter x Hunter, quel est le type de pouvoir utilisé par les personnages?",
+              opts: ["Chakra", "Mana", "Nen", "Reiryoku"],
+              a: 2,
+              explain:
+                "Le Nen est l'énergie vitale dans HxH. Il existe 6 types: Enhancement, Emission, Manipulation, Conjuration, Specialization, Transmutation.",
+              emoji: "✨",
+            },
+            {
+              q: "Quel est le studio qui a animé Demon Slayer?",
+              opts: ["Bones", "MAPPA", "ufotable", "Madhouse"],
+              a: 2,
+              explain:
+                "ufotable est célèbre pour ses animations d'une qualité exceptionnelle, avec des effets visuels époustouflants.",
+              emoji: "🌊",
+            },
+            {
+              q: "Dans Dragon Ball Super, quel nouveau niveau dépasse Super Saiyan God SS?",
+              opts: [
+                "Super Saiyan 4",
+                "Ultra Instinct",
+                "Super Saiyan Rose",
+                "Super Saiyan Blue",
+              ],
+              a: 3,
+              explain:
+                "Super Saiyan Blue (SSGSS) fusionne le Super Saiyan classique avec l'énergie divine de Super Saiyan God.",
+              emoji: "💠",
+            },
+            {
+              q: "Quel est l'ennemi principal de la saga Cell dans Dragon Ball Z?",
+              opts: ["Beerus", "Frieza", "Majin Buu", "Cell"],
+              a: 3,
+              explain:
+                "Cell est un androïde biologique créé par le Dr Gero, capable d'absorber les androïdes 17 et 18 pour atteindre sa forme parfaite.",
+              emoji: "🧬",
+            },
+            {
+              q: "Dans My Hero Academia, qui est le premier ennemi All Might?",
+              opts: ["Shigaraki", "All For One", "Muscular", "Nomu"],
+              a: 1,
+              explain:
+                "All For One est le nemesis historique d'All Might. C'est lui qui possède le Quirk capable de voler d'autres Quirks.",
+              emoji: "🦹",
+            },
+          ],
+        },
+        sport: {
+          name: "Football / Sport",
+          icon: "⚽",
+          color: "#00ff88",
+          questions: [
+            {
+              q: "Combien de fois la France a-t-elle remporté la Coupe du Monde?",
+              opts: ["1", "2", "3", "4"],
+              a: 1,
+              explain:
+                "La France a gagné la Coupe du Monde en 1998 (à domicile) et en 2018 (en Russie). Allez les Bleus!",
+              emoji: "🇫🇷",
+            },
+            {
+              q: "Qui détient le record de Ballons d'Or?",
+              opts: [
+                "Cristiano Ronaldo",
+                "Ronaldinho",
+                "Zinedine Zidane",
+                "Lionel Messi",
+              ],
+              a: 3,
+              explain:
+                "Lionel Messi a remporté 8 Ballons d'Or (2009-2019 et 2021, 2023). Un record absolu!",
+              emoji: "🏆",
+            },
+            {
+              q: "Dans quelle ville se trouve le Camp Nou?",
+              opts: ["Madrid", "Barcelone", "Valence", "Séville"],
+              a: 1,
+              explain:
+                "Le Camp Nou est le stade du FC Barcelone, situé en Catalogne. C'est le plus grand stade d'Europe avec 99 354 places.",
+              emoji: "🏟️",
+            },
+            {
+              q: "Quel pays a organisé la Coupe du Monde 2022?",
+              opts: [
+                "Arabie Saoudite",
+                "Émirats Arabes Unis",
+                "Bahreïn",
+                "Qatar",
+              ],
+              a: 3,
+              explain:
+                "Le Qatar a organisé la première Coupe du Monde en hiver (novembre-décembre), dans des stades climatisés.",
+              emoji: "🌍",
+            },
+            {
+              q: "Qui a marqué la 'Main de Dieu' lors de la Coupe du Monde 1986?",
+              opts: ["Pelé", "Diego Maradona", "Zinedine Zidane", "Ronaldo"],
+              a: 1,
+              explain:
+                "Diego Maradona a marqué de la main contre l'Angleterre le 22 juin 1986. Il a appelé ce but 'la main de Dieu'.",
+              emoji: "🙌",
+            },
+            {
+              q: "Combien de joueurs composent une équipe de rugby à XV?",
+              opts: ["11", "13", "15", "17"],
+              a: 2,
+              explain:
+                "Le rugby à XV oppose deux équipes de 15 joueurs, avec 8 remplaçants sur le banc.",
+              emoji: "🏉",
+            },
+            {
+              q: "Quel est le surnom de Cristiano Ronaldo?",
+              opts: ["CR6", "CR7", "CR8", "CR9"],
+              a: 1,
+              explain:
+                "CR7 désigne Cristiano Ronaldo, né le 5 février 1985, et son numéro fétiche 7 porté à Manchester United et Madrid.",
+              emoji: "⭐",
+            },
+            {
+              q: "Dans quelle discipline sportive Usain Bolt est-il champion?",
+              opts: ["Natation", "Haltérophilie", "Sprint", "Cyclisme"],
+              a: 2,
+              explain:
+                "Usain Bolt détient le record du monde du 100m (9.58s) et du 200m (19.19s), établis à Berlin en 2009.",
+              emoji: "⚡",
+            },
+            {
+              q: "Combien de sets faut-il gagner pour remporter un match de tennis en Grand Chelem (hommes)?",
+              opts: ["2", "3", "4", "5"],
+              a: 1,
+              explain:
+                "En Grand Chelem masculin, il faut gagner 3 sets sur 5. En Grand Chelem féminin, c'est 2 sets sur 3.",
+              emoji: "🎾",
+            },
+            {
+              q: "Quel pays a remporté le plus de médailles d'or aux JO historiquement?",
+              opts: ["Chine", "Russie", "Grande-Bretagne", "États-Unis"],
+              a: 3,
+              explain:
+                "Les États-Unis dominent le tableau historique avec plus de 1000 médailles d'or aux Jeux Olympiques d'été.",
+              emoji: "🥇",
+            },
+            {
+              q: "Quelle est la durée réglementaire d'un match de football?",
+              opts: ["80 min", "90 min", "100 min", "120 min"],
+              a: 1,
+              explain:
+                "Un match de football dure 90 minutes, divisé en deux mi-temps de 45 minutes avec du temps additionnel.",
+              emoji: "⏱️",
+            },
+            {
+              q: "Qui est connu comme 'The GOAT' du basketball?",
+              opts: [
+                "LeBron James",
+                "Kobe Bryant",
+                "Magic Johnson",
+                "Michael Jordan",
+              ],
+              a: 3,
+              explain:
+                "Michael Jordan est souvent désigné comme le meilleur joueur de l'histoire, avec 6 titres NBA et 6 MVP des Finales.",
+              emoji: "🏀",
+            },
+            {
+              q: "Dans quel sport pratique-t-on le 'smash'?",
+              opts: [
+                "Tennis uniquement",
+                "Tennis et Badminton",
+                "Volleyball uniquement",
+                "Tous ces sports",
+              ],
+              a: 3,
+              explain:
+                "Le smash est une frappe puissante vers le bas utilisée en tennis, badminton et volleyball.",
+              emoji: "🏸",
+            },
+            {
+              q: "Quelle équipe a remporté le plus de Ligues des Champions?",
+              opts: [
+                "FC Barcelone",
+                "Bayern Munich",
+                "Liverpool",
+                "Real Madrid",
+              ],
+              a: 3,
+              explain:
+                "Le Real Madrid a remporté 15 fois la Ligue des Champions (record absolu), dont 5 fois entre 2016 et 2022!",
+              emoji: "🏆",
+            },
+            {
+              q: "En natation, quelle longueur représente un 'longueur' standard?",
+              opts: ["25m", "50m", "100m", "200m"],
+              a: 1,
+              explain:
+                "Une longueur en natation correspond à la longueur d'un bassin olympique standard, soit 50 mètres.",
+              emoji: "🏊",
+            },
+            {
+              q: "Quel joueur détient le record de buts en une saison de Liga espagnole?",
+              opts: ["Messi", "Cristiano Ronaldo", "Suárez", "Benzema"],
+              a: 0,
+              explain:
+                "Lionel Messi a marqué 50 buts en une seule saison de Liga (2011-2012), un record jamais égalé.",
+              emoji: "🎯",
+            },
+            {
+              q: "Quel pays a inventé le basketball?",
+              opts: ["États-Unis", "Canada", "Angleterre", "Brésil"],
+              a: 0,
+              explain:
+                "Le basketball a été inventé par le Dr James Naismith en décembre 1891, à Springfield, Massachusetts, USA.",
+              emoji: "🏀",
+            },
+            {
+              q: "Combien de points vaut un 'try' au rugby?",
+              opts: ["3", "4", "5", "6"],
+              a: 2,
+              explain:
+                "Un essai (try) rapporte 5 points. La transformation réussie ajoute 2 points, soit 7 points au total.",
+              emoji: "🏉",
+            },
+            {
+              q: "Qui a gagné la Coupe du Monde 2018?",
+              opts: ["Croatie", "Belgique", "France", "Brésil"],
+              a: 2,
+              explain:
+                "La France a battu la Croatie 4-2 en finale à Moscou le 15 juillet 2018. Mbappé est devenu le 2ème joueur à marquer en finale des JO.",
+              emoji: "🇫🇷",
+            },
+            {
+              q: "Dans quel sport peut-on faire un 'dunk'?",
+              opts: ["Handball", "Volleyball", "Basketball", "Water-polo"],
+              a: 2,
+              explain:
+                "Le dunk est une action spectaculaire au basketball où le joueur saute pour mettre le ballon directement dans le panier.",
+              emoji: "🤸",
+            },
+            {
+              q: "Combien de balles utilise-t-on par match dans le tennis professionnel?",
+              opts: ["3", "6", "12", "Plus de 20"],
+              a: 3,
+              explain:
+                "Lors d'un match ATP/WTA important, on peut utiliser jusqu'à 70+ balles de tennis, changées régulièrement.",
+              emoji: "🎾",
+            },
+            {
+              q: "Quel est le record du monde du marathon?",
+              opts: [
+                "Moins de 2h",
+                "Entre 2h et 2h05",
+                "Entre 2h05 et 2h10",
+                "Plus de 2h10",
+              ],
+              a: 0,
+              explain:
+                "Kelvin Kiptum a établi le record du monde en 2023 avec 2h00m35s à Chicago. Le seuil des 2h a été symboliquement brisé!",
+              emoji: "🏃",
+            },
+          ],
+        },
+        histoire: {
+          name: "Histoire",
+          icon: "⚔️",
+          color: "#ffd700",
+          questions: [
+            {
+              q: "En quelle année la Révolution française a-t-elle commencé?",
+              opts: ["1779", "1789", "1799", "1809"],
+              a: 1,
+              explain:
+                "La Révolution française a débuté en 1789, avec la prise de la Bastille le 14 juillet. Cette date est devenue la fête nationale française.",
+              emoji: "🗡️",
+            },
+            {
+              q: "Qui était Napoléon Bonaparte?",
+              opts: [
+                "Roi de France",
+                "Président français",
+                "Général et Empereur des Français",
+                "Amiral de la Marine",
+              ],
+              a: 2,
+              explain:
+                "Napoléon Bonaparte (1769-1821) fut Consul puis Empereur des Français. Il a conquis une grande partie de l'Europe.",
+              emoji: "👑",
+            },
+            {
+              q: "Quelle ancienne civilisation a construit les Pyramides de Gizeh?",
+              opts: ["Grecs", "Romains", "Mésopotamiens", "Égyptiens"],
+              a: 3,
+              explain:
+                "Les Égyptiens ont construit les Grandes Pyramides de Gizeh vers 2560 av. J.-C. La plus grande, la pyramide de Khéops, reste l'une des 7 Merveilles du monde.",
+              emoji: "🏺",
+            },
+            {
+              q: "Quand a eu lieu la Première Guerre mondiale?",
+              opts: ["1905-1911", "1914-1918", "1939-1945", "1950-1953"],
+              a: 1,
+              explain:
+                "La Première Guerre mondiale (Grande Guerre) s'est déroulée de 1914 à 1918, faisant environ 20 millions de morts.",
+              emoji: "🕊️",
+            },
+            {
+              q: "Qui a découvert l'Amérique en 1492?",
+              opts: [
+                "Amerigo Vespucci",
+                "Vasco de Gama",
+                "Fernand de Magellan",
+                "Christophe Colomb",
+              ],
+              a: 3,
+              explain:
+                "Christophe Colomb, marin génois financé par l'Espagne, a atteint les Bahamas le 12 octobre 1492 lors de son premier voyage.",
+              emoji: "⛵",
+            },
+            {
+              q: "Quelle ville a été détruite par l'éruption du Vésuve en 79 ap. J.-C.?",
+              opts: ["Rome", "Carthage", "Pompéi", "Athènes"],
+              a: 2,
+              explain:
+                "L'éruption du Vésuve le 24 août 79 ap. J.-C. a enseveli Pompéi sous 4 à 6 mètres de cendres et de pierres ponces.",
+              emoji: "🌋",
+            },
+            {
+              q: "Quel empire était dirigé par Jules César?",
+              opts: [
+                "Empire grec",
+                "Empire perse",
+                "Empire ottoman",
+                "Empire romain",
+              ],
+              a: 3,
+              explain:
+                "Jules César était un général et homme politique romain. Il a conquis la Gaule et étendu l'empire. Il fut assassiné aux Ides de Mars en 44 av. J.-C.",
+              emoji: "🦅",
+            },
+            {
+              q: "En quelle année s'est terminée la Seconde Guerre mondiale?",
+              opts: ["1943", "1944", "1945", "1946"],
+              a: 2,
+              explain:
+                "La WWII s'est terminée le 8 mai 1945 en Europe (capitulation allemande) et le 2 septembre 1945 en Asie (capitulation japonaise).",
+              emoji: "✌️",
+            },
+            {
+              q: "Qui a été le premier Président des États-Unis?",
+              opts: [
+                "Benjamin Franklin",
+                "Thomas Jefferson",
+                "John Adams",
+                "George Washington",
+              ],
+              a: 3,
+              explain:
+                "George Washington a été le 1er Président des États-Unis (1789-1797). Il est surnommé 'Père de la Nation'.",
+              emoji: "🏛️",
+            },
+            {
+              q: "Quelle muraille a été construite pour protéger la Chine?",
+              opts: [
+                "Muraille de Pékin",
+                "Grande Muraille de Chine",
+                "Mur de Hadrien",
+                "Muraille Ming",
+              ],
+              a: 1,
+              explain:
+                "La Grande Muraille de Chine s'étend sur plus de 21 000 km. Sa construction a commencé au IIIe siècle av. J.-C.",
+              emoji: "🏯",
+            },
+            {
+              q: "Quel événement a déclenché la Première Guerre mondiale?",
+              opts: [
+                "Invasion de la Belgique",
+                "Attentat de Sarajevo",
+                "Torpillage du Lusitania",
+                "Crise de Maroc",
+              ],
+              a: 1,
+              explain:
+                "L'assassinat de l'archiduc François-Ferdinand d'Autriche à Sarajevo le 28 juin 1914 a déclenché une série d'ultimatums menant à la guerre.",
+              emoji: "🔫",
+            },
+            {
+              q: "Quelle révolution a eu lieu en Russie en 1917?",
+              opts: [
+                "Révolution française",
+                "Révolution anglaise",
+                "Révolution russe",
+                "Révolution américaine",
+              ],
+              a: 2,
+              explain:
+                "La Révolution russe de 1917 a renversé le tsar Nicolas II et porté les Bolcheviks de Lénine au pouvoir, créant l'URSS.",
+              emoji: "☭",
+            },
+            {
+              q: "Qui était Cléopâtre?",
+              opts: [
+                "Impératrice romaine",
+                "Reine d'Égypte",
+                "Reine de Grèce",
+                "Impératrice byzantine",
+              ],
+              a: 1,
+              explain:
+                "Cléopâtre VII (69-30 av. J.-C.) était la dernière reine d'Égypte ptolémaïque, connue pour ses relations avec César et Marc Antoine.",
+              emoji: "👑",
+            },
+            {
+              q: "Quel pays a lancé le premier satellite artificiel en 1957?",
+              opts: ["États-Unis", "Chine", "Allemagne", "URSS"],
+              a: 3,
+              explain:
+                "L'URSS a lancé Spoutnik 1 le 4 octobre 1957, premier satellite artificiel de l'histoire, déclenchant la course à l'espace.",
+              emoji: "🛸",
+            },
+            {
+              q: "En quelle année a été construite la Tour Eiffel?",
+              opts: ["1876", "1886", "1889", "1900"],
+              a: 2,
+              explain:
+                "La Tour Eiffel a été inaugurée le 31 mars 1889 pour l'Exposition Universelle. Conçue par Gustave Eiffel, elle mesure 330m.",
+              emoji: "🗼",
+            },
+            {
+              q: "Quel empire a envahi l'Angleterre en 1066?",
+              opts: [
+                "Empire danois",
+                "Empire normand",
+                "Empire français",
+                "Empire viking",
+              ],
+              a: 1,
+              explain:
+                "Guillaume le Conquérant, duc de Normandie, a envahi l'Angleterre en 1066 lors de la Bataille d'Hastings.",
+              emoji: "⚔️",
+            },
+            {
+              q: "Qui était Martin Luther King Jr.?",
+              opts: [
+                "Président américain",
+                "Pasteur et militant des droits civiques",
+                "Général militaire",
+                "Sénateur du Congo",
+              ],
+              a: 1,
+              explain:
+                "MLK Jr. était un pasteur baptiste et militant des droits civiques. Son discours 'I Have a Dream' reste mythique. Nobel de la paix en 1964.",
+              emoji: "✊",
+            },
+            {
+              q: "Quelle était la capitale de l'Empire byzantin?",
+              opts: ["Athènes", "Rome", "Alexandria", "Constantinople"],
+              a: 3,
+              explain:
+                "Constantinople (aujourd'hui Istanbul) était la capitale de l'Empire byzantin. Elle tomba en 1453 face aux Ottomans.",
+              emoji: "🕌",
+            },
+            {
+              q: "Quel est le nom du bateau sur lequel Christophe Colomb naviguait?",
+              opts: [
+                "Niña uniquement",
+                "La Pinta",
+                "La Santa María",
+                "Toutes ces réponses",
+              ],
+              a: 3,
+              explain:
+                "Colomb navigua sur 3 caravelles: La Santa María (son navire amiral), La Niña et La Pinta lors de son voyage de 1492.",
+              emoji: "⛵",
+            },
+            {
+              q: "En quelle année a eu lieu la chute du mur de Berlin?",
+              opts: ["1985", "1987", "1989", "1991"],
+              a: 2,
+              explain:
+                "Le mur de Berlin est tombé le 9 novembre 1989, après 28 ans de division. Cet événement a marqué la fin de la Guerre froide.",
+              emoji: "🧱",
+            },
+            {
+              q: "Qui a écrit 'Le Prince', traité politique de la Renaissance?",
+              opts: ["Platon", "Aristote", "Machiavel", "Thomas More"],
+              a: 2,
+              explain:
+                "Nicolas Machiavel a écrit 'Le Prince' en 1513. Ce traité controversé décrit comment un prince peut acquérir et conserver le pouvoir.",
+              emoji: "📜",
+            },
+          ],
+        },
+        cinema: {
+          name: "Cinéma / Séries",
+          icon: "🎬",
+          color: "#ff9500",
+          questions: [
+            {
+              q: "Quel film a remporté l'Oscar du meilleur film en 2020?",
+              opts: ["1917", "The Irishman", "Ford v Ferrari", "Parasite"],
+              a: 3,
+              explain:
+                "Parasite (Bong Joon-ho, 2019) a remporté 4 Oscars dont Meilleur film et Meilleur réalisateur, premier film non anglophone à gagner.",
+              emoji: "🎭",
+            },
+            {
+              q: "Qui joue Tony Stark/Iron Man dans le MCU?",
+              opts: [
+                "Chris Evans",
+                "Chris Hemsworth",
+                "Robert Downey Jr.",
+                "Mark Ruffalo",
+              ],
+              a: 2,
+              explain:
+                "Robert Downey Jr. a joué Tony Stark dans 10 films Marvel depuis Iron Man (2008) jusqu'à Avengers: Endgame (2019).",
+              emoji: "🦾",
+            },
+            {
+              q: "Quelle série Netflix met en scène des enfants face à des phénomènes surnaturels dans les années 80?",
+              opts: ["Dark", "The OA", "Outer Banks", "Stranger Things"],
+              a: 3,
+              explain:
+                "Stranger Things (2016) est créée par les frères Duffer. Elle se déroule à Hawkins, Indiana et met en scène le 'Upside Down'.",
+              emoji: "👻",
+            },
+            {
+              q: "Quel réalisateur a créé les films 'Inception' et 'The Dark Knight'?",
+              opts: [
+                "Ridley Scott",
+                "Steven Spielberg",
+                "James Cameron",
+                "Christopher Nolan",
+              ],
+              a: 3,
+              explain:
+                "Christopher Nolan est connu pour ses films complexes avec des narratives non-linéaires. Oppenheimer lui a valu son premier Oscar.",
+              emoji: "🎬",
+            },
+            {
+              q: "Dans quelle ville se déroule la série 'Breaking Bad'?",
+              opts: ["Dallas", "Denver", "Phoenix", "Albuquerque"],
+              a: 3,
+              explain:
+                "Breaking Bad se déroule à Albuquerque, Nouveau-Mexique. Walter White, professeur de chimie, devient baron de la drogue.",
+              emoji: "🔵",
+            },
+            {
+              q: "Quel film de James Cameron est le plus grand succès mondial de tous les temps?",
+              opts: ["Titanic", "Aliens", "The Terminator", "Avatar"],
+              a: 3,
+              explain:
+                "Avatar (2009) a généré 2,9 milliards de $ au box-office. Avatar: The Way of Water (2022) a également dépassé 2 milliards $.",
+              emoji: "🌿",
+            },
+            {
+              q: "Qui a réalisé le film 'Pulp Fiction' (1994)?",
+              opts: [
+                "Martin Scorsese",
+                "David Lynch",
+                "Joel Coen",
+                "Quentin Tarantino",
+              ],
+              a: 3,
+              explain:
+                "Quentin Tarantino a réalisé Pulp Fiction avec John Travolta, Uma Thurman et Samuel L. Jackson. Palme d'or à Cannes 1994.",
+              emoji: "🎞️",
+            },
+            {
+              q: "Dans Game of Thrones, quel personnage dit 'Valar Morghulis'?",
+              opts: ["Daenerys", "Jaqen H'ghar", "Arya Stark", "Cersei"],
+              a: 1,
+              explain:
+                "Jaqen H'ghar, Faceless Man de Braavos, prononce 'Valar Morghulis' (tous les hommes doivent mourir en Valyrien).",
+              emoji: "🐉",
+            },
+            {
+              q: "Quel acteur joue le rôle de Joker dans 'The Dark Knight' (2008)?",
+              opts: [
+                "Jared Leto",
+                "Joaquin Phoenix",
+                "Jack Nicholson",
+                "Heath Ledger",
+              ],
+              a: 3,
+              explain:
+                "Heath Ledger a reçu l'Oscar du meilleur acteur dans un second rôle à titre posthume pour son interprétation du Joker.",
+              emoji: "🤡",
+            },
+            {
+              q: "Quelle franchise de films met en scène John Wick?",
+              opts: [
+                "Mission Impossible",
+                "Fast & Furious",
+                "John Wick",
+                "Expendables",
+              ],
+              a: 2,
+              explain:
+                "John Wick (2014) met en scène Keanu Reeves comme assassin légendaire. La franchise comprend 4 films et continue.",
+              emoji: "🔫",
+            },
+            {
+              q: "Quel film Disney met en scène un lion nommé Simba?",
+              opts: ["Bambi", "Dumbo", "Jungle Book", "Le Roi Lion"],
+              a: 3,
+              explain:
+                "Le Roi Lion (1994) est l'un des films d'animation les plus populaires de Disney. Il s'inspire d'Hamlet de Shakespeare.",
+              emoji: "🦁",
+            },
+            {
+              q: "Dans quelle série voit-on Walter White se transformer en 'Heisenberg'?",
+              opts: ["Dexter", "The Wire", "Ozark", "Breaking Bad"],
+              a: 3,
+              explain:
+                "Breaking Bad (2008-2013) est considérée comme l'une des meilleures séries TV de l'histoire. Bryan Cranston joue Walter White.",
+              emoji: "⚗️",
+            },
+            {
+              q: "Quel studio a produit la saga 'Star Wars' originale?",
+              opts: [
+                "Warner Bros",
+                "Universal",
+                "Paramount",
+                "LucasFilm / 20th Century Fox",
+              ],
+              a: 3,
+              explain:
+                "George Lucas a créé Star Wars, produit par LucasFilm et distribué par 20th Century Fox. Disney a racheté LucasFilm en 2012.",
+              emoji: "🌟",
+            },
+            {
+              q: "Qui joue le rôle de Sherlock Holmes dans la série BBC?",
+              opts: [
+                "Martin Freeman",
+                "James Moriarty",
+                "Benedict Cumberbatch",
+                "Andrew Scott",
+              ],
+              a: 2,
+              explain:
+                "Benedict Cumberbatch joue Sherlock Holmes dans la série BBC Sherlock (2010-2017), avec Martin Freeman en Dr Watson.",
+              emoji: "🔍",
+            },
+            {
+              q: "Dans quel film Léonardo DiCaprio joue-t-il un imposteur qui se fait passer pour un pilote?",
+              opts: [
+                "The Aviator",
+                "Catch Me If You Can",
+                "Blood Diamond",
+                "The Departed",
+              ],
+              a: 1,
+              explain:
+                "Catch Me If You Can (2002, Spielberg) s'inspire de la vraie histoire de Frank Abagnale Jr., escroc légendaire des années 60.",
+              emoji: "✈️",
+            },
+            {
+              q: "Quel personnage de Marvel est connu sous le nom 'Homme-Araignée'?",
+              opts: [
+                "Miles Morales uniquement",
+                "Peter Parker uniquement",
+                "Les deux",
+                "Aucun de ces personnages",
+              ],
+              a: 2,
+              explain:
+                "Spider-Man a plusieurs incarnations. Peter Parker est l'original, Miles Morales est un autre Spider-Man populaire dans Into the Spider-Verse.",
+              emoji: "🕷️",
+            },
+            {
+              q: "Dans quelle série Netflix se déroule la 'Squid Game'?",
+              opts: ["Corée du Nord", "Japon", "Chine", "Corée du Sud"],
+              a: 3,
+              explain:
+                "Squid Game (2021) est une série sud-coréenne créée par Hwang Dong-hyuk. Elle est devenue la série la plus regardée de Netflix.",
+              emoji: "🎯",
+            },
+            {
+              q: "Quel film a lancé le 'Marvel Cinematic Universe'?",
+              opts: [
+                "The Incredible Hulk",
+                "Thor",
+                "Captain America",
+                "Iron Man",
+              ],
+              a: 3,
+              explain:
+                "Iron Man (2008), avec Robert Downey Jr., est le premier film du MCU. La scène post-générique avec Nick Fury a tout lancé!",
+              emoji: "🦾",
+            },
+            {
+              q: "Qui a réalisé la trilogie 'Le Seigneur des Anneaux'?",
+              opts: [
+                "George Lucas",
+                "Steven Spielberg",
+                "Ridley Scott",
+                "Peter Jackson",
+              ],
+              a: 3,
+              explain:
+                "Peter Jackson a adapté les romans de Tolkien en trilogie (2001-2003). Le Retour du Roi a remporté 11 Oscars.",
+              emoji: "💍",
+            },
+            {
+              q: "Dans quelle ville se situe la série 'Lupin' (Netflix)?",
+              opts: ["Lyon", "Bordeaux", "Paris", "Marseille"],
+              a: 2,
+              explain:
+                "Lupin (2021) se déroule à Paris. Omar Sy joue Assane Diop, voleur et maître du déguisement inspiré d'Arsène Lupin.",
+              emoji: "🎩",
+            },
+            {
+              q: "Qui a réalisé 'Avatar' (2009)?",
+              opts: [
+                "Ridley Scott",
+                "Christopher Nolan",
+                "Steven Spielberg",
+                "James Cameron",
+              ],
+              a: 3,
+              explain:
+                "James Cameron a mis 12 ans à développer Avatar, attendant que la technologie soit suffisante pour réaliser sa vision.",
+              emoji: "💙",
+            },
+          ],
+        },
+      };
+
+      // ============ STATE ============
+      let state = {
+        p1: {
+          name: "Joueur 1",
+          avatar: "😎",
+          score: 0,
+          correct: 0,
+          wrong: 0,
+          combo: 0,
+        },
+        p2: {
+          name: "Joueur 2",
+          avatar: "🔥",
+          score: 0,
+          correct: 0,
+          wrong: 0,
+          combo: 0,
+        },
+        currentTheme: null,
+        questions: [],
+        qIndex: 0,
+        currentPlayer: 1,
+        timer: null,
+        timerValue: 15,
+        answered: false,
+        selectedThemes: [],
+        themeIndex: 0,
+        themeScores: { p1: 0, p2: 0 },
+        round: 0,
+      };
+
+      const AVATARS = [
+        "😎",
+        "🔥",
+        "⚡",
+        "🦁",
+        "🐉",
+        "🤖",
+        "👾",
+        "🎯",
+        "🦊",
+        "🐺",
+        "🎮",
+        "💎",
+      ];
+      const TIMER_MAX = 15;
+
+      // ============ AUDIO ============
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      let audioCtx = null;
+
+      function getAudioCtx() {
+        if (!audioCtx) audioCtx = new AudioCtx();
+        return audioCtx;
+      }
+
+      function playTone(freq, duration, type = "sine", vol = 0.3) {
+        try {
+          const ctx = getAudioCtx();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, ctx.currentTime);
+          gain.gain.setValueAtTime(vol, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(
+            0.001,
+            ctx.currentTime + duration,
+          );
+          osc.start(ctx.currentTime);
+          osc.stop(ctx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      function playCorrect() {
+        playTone(523, 0.1, "sine", 0.2);
+        setTimeout(() => playTone(659, 0.1, "sine", 0.2), 100);
+        setTimeout(() => playTone(784, 0.2, "sine", 0.2), 200);
+      }
+
+      function playWrong() {
+        playTone(200, 0.1, "sawtooth", 0.2);
+        setTimeout(() => playTone(150, 0.3, "sawtooth", 0.2), 100);
+      }
+
+      function playVictory() {
+        [523, 659, 784, 1046].forEach((f, i) =>
+          setTimeout(() => playTone(f, 0.3, "triangle", 0.25), i * 120),
+        );
+      }
+
+      function playTick() {
+        playTone(800, 0.05, "square", 0.05);
+      }
+
+      // ============ INIT ============
+      function initAvatars() {
+        ["p1", "p2"].forEach((p) => {
+          const el = document.getElementById(`${p}-avatars`);
+          el.innerHTML = "";
+          AVATARS.forEach((av, i) => {
+            const btn = document.createElement("button");
+            btn.className =
+              "avatar-btn" + (i === (p === "p1" ? 0 : 1) ? " selected" : "");
+            btn.textContent = av;
+            btn.onclick = () => {
+              el.querySelectorAll(".avatar-btn").forEach((b) =>
+                b.classList.remove("selected"),
+              );
+              btn.classList.add("selected");
+              state[p].avatar = av;
+            };
+            el.appendChild(btn);
+          });
+          state[p].avatar = AVATARS[p === "p1" ? 0 : 1];
+        });
+      }
+
+      function initThemes() {
+        const grid = document.getElementById("themes-grid");
+        grid.innerHTML = "";
+        Object.entries(THEMES).forEach(([key, theme]) => {
+          const btn = document.createElement("div");
+          btn.className = "theme-btn";
+          btn.dataset.key = key;
+          btn.innerHTML = `<span class="theme-icon">${theme.icon}</span><div class="theme-name">${theme.name}</div><div class="theme-count">${theme.questions.length} questions</div>`;
+          btn.onclick = () => {
+            grid
+              .querySelectorAll(".theme-btn")
+              .forEach((b) => b.classList.remove("selected"));
+            btn.classList.add("selected");
+            state.selectedThemes = [key];
+          };
+          grid.appendChild(btn);
+        });
+      }
+
+      function initParticles() {
+        const container = document.getElementById("particles");
+        for (let i = 0; i < 20; i++) {
+          const p = document.createElement("div");
+          p.className = "particle";
+          const size = Math.random() * 4 + 1;
+          p.style.cssText = `
+      width: ${size}px; height: ${size}px;
+      left: ${Math.random() * 100}%;
+      background: ${Math.random() > 0.5 ? "rgba(0,170,255,0.4)" : "rgba(255,34,68,0.4)"};
+      animation-duration: ${Math.random() * 10 + 8}s;
+      animation-delay: ${Math.random() * 8}s;
+    `;
+          container.appendChild(p);
+        }
+      }
+
+      // ============ NAVIGATION ============
+      function showScreen(id) {
+        document
+          .querySelectorAll(".screen")
+          .forEach((s) => s.classList.remove("active"));
+        document.getElementById(id).classList.add("active");
+      }
+
+      function goHome() {
+        clearInterval(state.timer);
+        state = {
+          ...state,
+          qIndex: 0,
+          currentPlayer: 1,
+          answered: false,
+          themeIndex: 0,
+          themeScores: { p1: 0, p2: 0 },
+        };
+        state.p1.score = 0;
+        state.p1.correct = 0;
+        state.p1.wrong = 0;
+        state.p1.combo = 0;
+        state.p2.score = 0;
+        state.p2.correct = 0;
+        state.p2.wrong = 0;
+        state.p2.combo = 0;
+        showScreen("home-screen");
+      }
+
+      // ============ GAME START ============
+      function startGame() {
+        state.p1.name = document.getElementById("p1-name").value || "Joueur 1";
+        state.p2.name = document.getElementById("p2-name").value || "Joueur 2";
+
+        if (state.selectedThemes.length === 0) {
+          // Auto select first
+          state.selectedThemes = ["culture"];
+          document.querySelector(".theme-btn")?.classList.add("selected");
+        }
+
+        const themeKey = state.selectedThemes[0];
+        state.currentTheme = themeKey;
+        state.questions = shuffleArray([...THEMES[themeKey].questions]).slice(
+          0,
+          20,
+        );
+        state.qIndex = 0;
+        state.currentPlayer = 1;
+        state.themeScores = { p1: 0, p2: 0 };
+        state.p1.score = 0;
+        state.p1.correct = 0;
+        state.p1.wrong = 0;
+        state.p1.combo = 0;
+        state.p2.score = 0;
+        state.p2.correct = 0;
+        state.p2.wrong = 0;
+        state.p2.combo = 0;
+        state.round = 0;
+
+        showScreen("game-screen");
+        updateHUD();
+        loadQuestion();
+      }
+
+      function rematch() {
+        startGame();
+      }
+
+      // ============ GAME LOGIC ============
+      function shuffleArray(arr) {
+        return arr.sort(() => Math.random() - 0.5);
+      }
+
+      function updateHUD() {
+        document.getElementById("hud-p1-name").textContent = state.p1.name;
+        document.getElementById("hud-p2-name").textContent = state.p2.name;
+        document.getElementById("hud-p1-avatar").textContent = state.p1.avatar;
+        document.getElementById("hud-p2-avatar").textContent = state.p2.avatar;
+        document.getElementById("hud-p1-score").textContent = state.p1.score;
+        document.getElementById("hud-p2-score").textContent = state.p2.score;
+        document.getElementById("hud-qcount").textContent =
+          `Q ${state.qIndex + 1}/${state.questions.length}`;
+      }
+
+      function loadQuestion() {
+        if (state.qIndex >= state.questions.length) {
+          showThemeResult();
+          return;
+        }
+
+        state.answered = false;
+        const q = state.questions[state.qIndex];
+        const theme = THEMES[state.currentTheme];
+        const cp = state.currentPlayer;
+
+        // Update turn indicator
+        const turnEl = document.getElementById("turn-indicator");
+        const pName = cp === 1 ? state.p1.name : state.p2.name;
+        const pAvatar = cp === 1 ? state.p1.avatar : state.p2.avatar;
+        turnEl.className = `turn-indicator p${cp}-turn`;
+        turnEl.innerHTML = `${pAvatar} TOUR DE <strong>${pName.toUpperCase()}</strong>`;
+
+        // Question card
+        const card = document.getElementById("question-card");
+        card.className = `question-card p${cp}-active`;
+        card.style.animation = "none";
+        card.offsetHeight;
+        card.style.animation = "";
+
+        document.getElementById("q-theme-tag").textContent = theme.name;
+        document.getElementById("q-number").textContent =
+          `Q${state.qIndex + 1}`;
+        document.getElementById("question-text").textContent = q.q;
+
+        // Progress
+        const pct = Math.round((state.qIndex / state.questions.length) * 100);
+        document.getElementById("progress-fill").style.width = pct + "%";
+        document.getElementById("prog-pct").textContent = pct + "%";
+        document.getElementById("prog-theme").textContent = theme.name;
+
+        // Options
+        const optionsGrid = document.getElementById("options-grid");
+        const letters = ["A", "B", "C", "D"];
+        const shuffledOpts = q.opts
+          .map((o, i) => ({ text: o, orig: i }))
+          .sort(() => Math.random() - 0.5);
+        let correctShuffledIdx = shuffledOpts.findIndex((o) => o.orig === q.a);
+
+        optionsGrid.innerHTML = "";
+        shuffledOpts.forEach((opt, i) => {
+          const btn = document.createElement("button");
+          btn.className = "option-btn";
+          btn.innerHTML = `<span class="option-letter">${letters[i]}</span><span>${opt.text}</span>`;
+          btn.onclick = () => answer(i, correctShuffledIdx, btn, q);
+          optionsGrid.appendChild(btn);
+        });
+
+        // Hide result
+        const ar = document.getElementById("answer-result");
+        ar.style.display = "none";
+        ar.className = "answer-result";
+
+        // Timer
+        startTimer(q, correctShuffledIdx);
+        updateHUD();
+      }
+
+      function startTimer(q, correctIdx) {
+        clearInterval(state.timer);
+        state.timerValue = TIMER_MAX;
+        const circle = document.getElementById("timer-circle");
+        const display = document.getElementById("timer-display");
+        const circumference = 2 * Math.PI * 27;
+        circle.style.strokeDasharray = circumference;
+
+        function updateTimer() {
+          const frac = state.timerValue / TIMER_MAX;
+          circle.style.strokeDashoffset = circumference * (1 - frac);
+          display.textContent = state.timerValue;
+
+          if (state.timerValue > 8) {
+            circle.style.stroke = "var(--timer-full)";
+            display.style.color = "var(--timer-full)";
+          } else if (state.timerValue > 4) {
+            circle.style.stroke = "var(--timer-mid)";
+            display.style.color = "var(--timer-mid)";
+          } else {
+            circle.style.stroke = "var(--timer-low)";
+            display.style.color = "var(--timer-low)";
+            if (state.timerValue <= 4) playTick();
+          }
+        }
+
+        updateTimer();
+        state.timer = setInterval(() => {
+          if (state.answered) return;
+          state.timerValue--;
+          updateTimer();
+          if (state.timerValue <= 0) {
+            clearInterval(state.timer);
+            if (!state.answered) timeOut(q, correctIdx);
+          }
+        }, 1000);
+      }
+
+      function timeOut(q, correctIdx) {
+        state.answered = true;
+        const btns = document.querySelectorAll(".option-btn");
+        btns.forEach((btn, i) => {
+          btn.disabled = true;
+          if (i === correctIdx) btn.classList.add("correct");
+        });
+        const cp = state.currentPlayer;
+        const player = cp === 1 ? state.p1 : state.p2;
+        player.wrong++;
+        player.combo = 0;
+        playWrong();
+        showResult(false, q);
+        scheduleNextQuestion();
+      }
+
+      function answer(selectedIdx, correctIdx, btn, q) {
+        if (state.answered) return;
+        state.answered = true;
+        clearInterval(state.timer);
+
+        const btns = document.querySelectorAll(".option-btn");
+        btns.forEach((b) => (b.disabled = true));
+
+        const isCorrect = selectedIdx === correctIdx;
+        const cp = state.currentPlayer;
+        const player = cp === 1 ? state.p1 : state.p2;
+        const timeBonus = Math.max(0, state.timerValue);
+
+        if (isCorrect) {
+          btn.classList.add("correct");
+          player.correct++;
+          player.combo++;
+          const comboBonus = player.combo > 1 ? (player.combo - 1) * 50 : 0;
+          const pts = 100 + timeBonus * 5 + comboBonus;
+          player.score += pts;
+          if (cp === 1) state.themeScores.p1 += pts;
+          else state.themeScores.p2 += pts;
+          playCorrect();
+          showScorePopup(
+            `+${pts}`,
+            cp === 1 ? "var(--p1-color)" : "var(--p2-color)",
+          );
+          if (player.combo > 1) animateHUD(cp);
+        } else {
+          btn.classList.add("wrong");
+          btns[correctIdx].classList.add("correct");
+          player.wrong++;
+          player.combo = 0;
+          playWrong();
+          document.getElementById("game-screen").classList.add("shake");
+          setTimeout(
+            () =>
+              document.getElementById("game-screen").classList.remove("shake"),
+            500,
+          );
+        }
+
+        showResult(isCorrect, q);
+        updateHUD();
+        scheduleNextQuestion();
+      }
+
+      function scheduleNextQuestion() {
+        setTimeout(() => {
+          state.qIndex++;
+          // Alternate players each question
+          state.currentPlayer = state.currentPlayer === 1 ? 2 : 1;
+          loadQuestion();
+        }, 3000);
+      }
+
+      function showResult(isCorrect, q) {
+        const ar = document.getElementById("answer-result");
+        ar.style.display = "flex";
+        ar.className = `answer-result show`;
+
+        const emojiEl = document.getElementById("result-emoji");
+        const titleEl = document.getElementById("result-title");
+        const explainEl = document.getElementById("result-explain");
+        const imgEl = document.getElementById("result-image");
+        const textEl = document.getElementById("result-text");
+
+        emojiEl.textContent = isCorrect ? "✅" : "❌";
+        titleEl.textContent = isCorrect ? "CORRECT! 🎉" : "INCORRECT! 😤";
+        textEl.className = `result-text ${isCorrect ? "correct-result" : "wrong-result"}`;
+        explainEl.textContent = q.explain;
+        imgEl.textContent = q.emoji;
+      }
+
+      function showScorePopup(text, color) {
+        const popup = document.createElement("div");
+        popup.className = "score-popup";
+        popup.style.color = color;
+        popup.textContent = text;
+        document.body.appendChild(popup);
+        setTimeout(() => popup.classList.add("show"), 10);
+        setTimeout(() => {
+          popup.classList.remove("show");
+          popup.classList.add("hide");
+        }, 800);
+        setTimeout(() => popup.remove(), 1500);
+      }
+
+      function animateHUD(player) {
+        const el = document.getElementById(`hud-p${player}`);
+        el.classList.remove("active-glow-p1", "active-glow-p2");
+        el.offsetHeight;
+        el.classList.add(`active-glow-p${player}`);
+      }
+
+      // ============ THEME RESULT ============
+      function showThemeResult() {
+        clearInterval(state.timer);
+
+        const p1Win = state.themeScores.p1 > state.themeScores.p2;
+        const tie = state.themeScores.p1 === state.themeScores.p2;
+
+        const bannerEl = document.getElementById("theme-winner-banner");
+        if (tie) {
+          bannerEl.textContent = "🤝 ÉGALITÉ!";
+          bannerEl.style.color = "var(--accent-gold)";
+        } else {
+          const winner = p1Win ? state.p1 : state.p2;
+          bannerEl.innerHTML = `${winner.avatar} ${winner.name.toUpperCase()}<br>REMPORTE LE THÈME!`;
+          bannerEl.style.color = p1Win ? "var(--p1-color)" : "var(--p2-color)";
+        }
+
+        // Build result cards
+        const cardsEl = document.getElementById("theme-results-cards");
+        cardsEl.innerHTML = "";
+
+        [
+          { p: state.p1, key: "p1", score: state.themeScores.p1 },
+          { p: state.p2, key: "p2", score: state.themeScores.p2 },
+        ].forEach(({ p, key, score }) => {
+          const isWinner =
+            (key === "p1" && p1Win) || (key === "p2" && !p1Win && !tie);
+          const total = p.correct + p.wrong;
+          const pct = total > 0 ? Math.round((p.correct / total) * 100) : 0;
+          const card = document.createElement("div");
+          card.className = `result-card ${key}-card${isWinner ? " winner" : ""}`;
+          card.innerHTML = `
+      <div class="rc-avatar">${p.avatar}</div>
+      <div class="rc-name">${p.name}</div>
+      <div class="rc-big-score" style="color:${key === "p1" ? "var(--p1-color)" : "var(--p2-color)"}">${score}</div>
+      <div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:0.75rem">points</div>
+      <div class="rc-stat"><span>✅ Bonnes réponses</span><span class="stat-correct">${p.correct}</span></div>
+      <div class="rc-stat"><span>❌ Mauvaises</span><span class="stat-wrong">${p.wrong}</span></div>
+      <div class="rc-stat"><span>📊 Réussite</span><span>${pct}%</span></div>
+    `;
+          cardsEl.appendChild(card);
+        });
+
+        showScreen("theme-result-screen");
+        launchFireworks("fireworks");
+        if (!tie && (p1Win || !p1Win)) playVictory();
+
+        // Continue btn
+        document.getElementById("continue-btn").textContent =
+          "🏆 VOIR LES RÉSULTATS FINAUX";
+      }
+
+      function nextTheme() {
+        showFinalScreen();
+      }
+
+      // ============ FINAL SCREEN ============
+      function showFinalScreen() {
+        const p1Win = state.p1.score > state.p2.score;
+        const tie = state.p1.score === state.p2.score;
+
+        const champion = tie ? null : p1Win ? state.p1 : state.p2;
+
+        document.getElementById("champion-name").textContent = tie
+          ? "🤝 ÉGALITÉ!"
+          : champion.name.toUpperCase();
+        document.getElementById("champion-subtitle").textContent = tie
+          ? "Les deux joueurs ont fait jeu égal — quel match!"
+          : `Champion incontesté avec ${champion.score} points — Bravo!`;
+
+        // Final scores
+        const finalScores = document.getElementById("final-scores");
+        finalScores.innerHTML = "";
+
+        [
+          { p: state.p1, key: "p1" },
+          { p: state.p2, key: "p2" },
+        ].forEach(({ p, key }) => {
+          const total = p.correct + p.wrong;
+          const pct = total > 0 ? Math.round((p.correct / total) * 100) : 0;
+          const card = document.createElement("div");
+          card.className = `result-card ${key}-card${!tie && champion === p ? " winner" : ""}`;
+          card.innerHTML = `
+      <div class="rc-avatar">${p.avatar}</div>
+      <div class="rc-name">${p.name}</div>
+      <div class="rc-big-score" style="color:${key === "p1" ? "var(--p1-color)" : "var(--p2-color)"}">${p.score}</div>
+      <div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:0.75rem">points totaux</div>
+      <div class="rc-stat"><span>✅ Correctes</span><span class="stat-correct">${p.correct}</span></div>
+      <div class="rc-stat"><span>❌ Incorrectes</span><span class="stat-wrong">${p.wrong}</span></div>
+      <div class="rc-stat"><span>📊 Réussite</span><span>${pct}%</span></div>
+    `;
+          finalScores.appendChild(card);
+        });
+
+        showScreen("final-screen");
+        launchFireworks("final-fireworks");
+        playVictory();
+
+        // Save leaderboard
+        if (!tie) saveLeaderboard(champion.name, champion.score);
+      }
+
+      // ============ FIREWORKS ============
+      function launchFireworks(containerId) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = "";
+        const colors = [
+          "#ffd700",
+          "#0af",
+          "#ff2244",
+          "#00ff88",
+          "#9b4dff",
+          "#ff9500",
+        ];
+
+        for (let i = 0; i < 30; i++) {
+          setTimeout(() => {
+            const fw = document.createElement("div");
+            fw.className = "firework";
+            const size = Math.random() * 100 + 50;
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            fw.style.cssText = `
+        left: ${Math.random() * 90 + 5}%;
+        top: ${Math.random() * 60 + 10}%;
+        width: ${size}px;
+        height: ${size}px;
+        background: radial-gradient(circle, ${color} 0%, transparent 70%);
+        animation-duration: ${Math.random() * 1 + 0.5}s;
+        animation-delay: ${Math.random() * 0.5}s;
+      `;
+            container.appendChild(fw);
+            setTimeout(() => fw.remove(), 2000);
+          }, i * 100);
+        }
+      }
+
+      // ============ LEADERBOARD ============
+      function saveLeaderboard(name, score) {
+        try {
+          const lb = JSON.parse(localStorage.getItem("duelquiz_lb") || "[]");
+          lb.push({
+            name,
+            score,
+            date: new Date().toLocaleDateString("fr-FR"),
+          });
+          lb.sort((a, b) => b.score - a.score);
+          localStorage.setItem("duelquiz_lb", JSON.stringify(lb.slice(0, 10)));
+        } catch (e) {}
+      }
+
+      function showLeaderboard() {
+        const lbSection = document.getElementById("home-leaderboard");
+        const lbEntries = document.getElementById("lb-entries");
+
+        if (lbSection.style.display === "block") {
+          lbSection.style.display = "none";
+          return;
+        }
+
+        try {
+          const lb = JSON.parse(localStorage.getItem("duelquiz_lb") || "[]");
+          if (lb.length === 0) {
+            lbEntries.innerHTML =
+              '<div style="color:var(--text-secondary);text-align:center;padding:1rem">Aucune partie jouée encore!</div>';
+          } else {
+            lbEntries.innerHTML = lb
+              .map(
+                (e, i) => `
+        <div class="lb-entry">
+          <div class="lb-rank">${i + 1}</div>
+          <div class="lb-name">${e.name}</div>
+          <div class="lb-score">${e.score}</div>
+          <div class="lb-date">${e.date}</div>
+        </div>
+      `,
+              )
+              .join("");
+          }
+        } catch (e) {
+          lbEntries.innerHTML =
+            '<div style="color:var(--text-secondary)">Classement indisponible</div>';
+        }
+
+        lbSection.style.display = "block";
+      }
+
+      // ============ INIT ============
+      initAvatars();
+      initThemes();
+      initParticles();
+    </script>
+  </body>
+</html>
